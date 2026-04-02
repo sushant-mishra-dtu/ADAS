@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🚗 ADAS — Decentralized Data Collection Platform for Autonomous Driving in India
 
@@ -503,4 +503,3 @@ MIT — See [LICENSE](LICENSE) for details.
 **🇮🇳 Making India's roads safer, one edge case at a time.**
 
 </div>
-]]>
