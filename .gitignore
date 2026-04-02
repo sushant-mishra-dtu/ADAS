@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Data artifacts (don't commit captured frames)
+data/frames/*.jpg
+data/frames/*.png
+data/telemetry/*.json
+
+# Model weights
+models/*.pt
+models/*.onnx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,23 @@
+# ============================================================
+# ADAS — Dependencies for Raspberry Pi Zero 2W
+# ============================================================
+# Install: pip install -r requirements.txt
+# Note: Use headless OpenCV to avoid pulling in GUI libs on Pi
+# ============================================================
+
+# --- Computer Vision ---
+opencv-python-headless>=4.8.0       # Camera capture & image processing (no GUI)
+
+# --- Object Detection / Active Learning ---
+ultralytics>=8.1.0                  # YOLOv8 nano model inference
+onnxruntime>=1.16.0                 # Lightweight ONNX inference backend for Pi
+
+# --- CAN Bus / OBD-II ---
+python-can>=4.3.0                   # CAN bus interface (used for real hardware)
+
+# --- Image Encoding (optimized JPEG) ---
+Pillow>=10.0.0                      # Fast image save/load
+
+# --- Utilities ---
+numpy>=1.24.0                       # Array operations (comes with OpenCV)
+psutil>=5.9.0                       # System resource monitoring (RAM/CPU)
