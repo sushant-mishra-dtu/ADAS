@@ -9,7 +9,7 @@
 [![TFLite](https://img.shields.io/badge/Inference-TensorFlow%20Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](#inference-engine)
 [![CameraX](https://img.shields.io/badge/Camera-CameraX%201.4-4285F4?style=for-the-badge&logo=google&logoColor=white)](#camerax-pipeline)
 [![APK](https://img.shields.io/badge/⬇%EF%B8%8F%20Download-Debug%20APK%20%7E27MB-4CAF50?style=for-the-badge)](#️-download--install)
-[![Hackathon](https://img.shields.io/badge/Hackathon-Vihaan%209.0%20IEEE%20DTU-blueviolet?style=for-the-badge)](#)
+[![Personal Project](https://img.shields.io/badge/Project-Personal-FF4081?style=for-the-badge&logo=github&logoColor=white)](#)
 
 </div>
 
@@ -575,7 +575,7 @@ MIT — See [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Built with ❤️ for Vihaan 9.0 IEEE DTU Hackathon**
+**A personal project by [Manish Kumar](https://github.com/BHUKKADDD)**
 
 **🇮🇳 Making India's roads safer, one edge case at a time.**
 
