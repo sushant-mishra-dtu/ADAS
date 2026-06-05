@@ -1,16 +1,15 @@
 <div align="center">
 
-# 🚗 ADAS — Decentralized Data Collection Platform for Autonomous Driving in India
+# 🚗 ADAS — AI Dashcam for Indian Roads
 
-**A full-stack ADAS platform: a native Android app that runs real-time on-device object detection through your phone's camera, paired with a cloud backend that ingests, scores, and serves high-value driving data to train Vision-Language Models (VLMs) on India's chaotic roads.**
+**A full-stack, on-device Advanced Driver Assistance System built for India's chaotic, unstructured traffic — powered by a native Android app running real-time object detection entirely on your smartphone's camera, with zero cloud dependency.**
 
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Platform: Android](https://img.shields.io/badge/Platform-Android%2024%2B-3DDC84?logo=android&logoColor=white)](#-android-adas-app)
-[![Model: YOLOv8n](https://img.shields.io/badge/Model-YOLOv8%20Nano%20%2F%20TFLite-FF6F00)](#ai-pipeline--active-learning)
-[![Tests: 78 Passed](https://img.shields.io/badge/Tests-78%20Passed-brightgreen)](#testing)
-[![Hackathon: Vihaan 9](https://img.shields.io/badge/Hackathon-Vihaan%209-blueviolet)](#)
-[![APK: Download](https://img.shields.io/badge/APK-Download%20Debug-4CAF50?logo=android&logoColor=white)](#-download-apk)
+[![Android](https://img.shields.io/badge/Platform-Android%207.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](#-android-adas-app)
+[![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](#tech-stack)
+[![TFLite](https://img.shields.io/badge/Inference-TensorFlow%20Lite-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](#inference-engine)
+[![CameraX](https://img.shields.io/badge/Camera-CameraX%201.4-4285F4?style=for-the-badge&logo=google&logoColor=white)](#camerax-pipeline)
+[![APK](https://img.shields.io/badge/⬇%EF%B8%8F%20Download-Debug%20APK%20%7E27MB-4CAF50?style=for-the-badge)](#️-download--install)
+[![Hackathon](https://img.shields.io/badge/Hackathon-Vihaan%209.0%20IEEE%20DTU-blueviolet?style=for-the-badge)](#)
 
 </div>
 
@@ -18,891 +17,519 @@
 
 ## 📑 Table of Contents
 
-- [Executive Summary](#executive-summary)
-- [The Problem — The Indian Data Deficit](#the-problem--the-indian-data-deficit)
-- [The Solution — Edge-Optimized Hardware](#the-solution--edge-optimized-hardware)
-- [System Architecture](#system-architecture)
-- [AI Pipeline & Active Learning](#ai-pipeline--active-learning)
-- [🆕 Kalman Tracker & Object Tracking](#-kalman-tracker--multi-object-tracking)
-- [🆕 Adaptive Threshold](#-adaptive-threshold--environment-aware-filtering)
-- [🆕 Spatio-Temporal Model (ConvLSTM)](#-spatio-temporal-anomaly-scoring-convlstm)
-- [VLM Optimization by Layering](#vlm-optimization-by-layering)
-- [Consumer Incentive Model](#consumer-incentive-model-solving-the-cold-start)
-- [Business Model — B2B SaaS](#business-model--b2b-saas)
-- [Privacy & Compliance](#privacy--compliance)
-- [📱 Android ADAS App](#-android-adas-app)
-- [⬇️ Download APK](#-download-apk)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Configuration Reference](#configuration-reference)
-- [Testing](#testing)
-- [Tech Stack](#tech-stack)
-- [Roadmap](#roadmap)
-- [License](#license)
+- [The Problem — Why India Needs Its Own ADAS](#-the-problem--why-india-needs-its-own-adas)
+- [The Solution — Phone as the Edge Node](#-the-solution--phone-as-the-edge-node)
+- [System Architecture](#️-system-architecture)
+- [Android ADAS App](#-android-adas-app)
+  - [CameraX Pipeline](#camerax-pipeline)
+  - [Inference Engine](#inference-engine)
+  - [Detection Overlay](#detection-overlay)
+- [Cloud Backend](#️-cloud-backend)
+- [Legacy Edge Modules](#-legacy-edge-modules-python)
+- [ESP32-P4 Firmware](#-esp32-p4-eye-firmware-archived)
+- [Download & Install](#️-download--install)
+- [Build from Source](#️-build-from-source)
+- [Plugging in a Real Model](#-plugging-in-a-real-tflite-model)
+- [Tech Stack](#-tech-stack)
+- [Roadmap](#-roadmap)
+- [License](#-license)
 
 ---
 
-## Executive Summary
+## 🇮🇳 The Problem — Why India Needs Its Own ADAS
 
-This project presents a strategic roadmap for a **low-cost, decentralized data collection platform** designed to train advanced Vision-Language Models (VLMs) for autonomous driving in India.
+Standard ADAS systems are trained on orderly Western roads — clear lane markings, rule-following drivers, predictable intersections. They **consistently fail in India**.
 
-By distributing edge-computing hardware to daily commuters, the platform aims to solve the **critical shortage of localized driving data** while creating a highly lucrative **B2B Software-as-a-Service (SaaS)** business model for automotive manufacturers. Instead of relying on expensive autonomous vehicle fleets to collect data, this system crowdsources real-world driving scenarios from millions of ordinary commuters — the people who actually navigate India's roads every day.
+| Problem | Root Cause |
+|---------|-----------|
+| False emergency braking | Autorickshaws cutting lanes, hand-painted road signs |
+| Sensor confusion | Missing lane markings, unmarked speed bumps |
+| Animal blindness | Cows, dogs, camels as static road obstacles |
+| Weather failure | Monsoon rain, dust storms, unlit night roads |
+| Intersection deadlock | Unregulated multi-way junctions |
 
----
+> **The bottleneck isn't compute power — it's the absence of India-specific, edge-case-rich training data.**
 
-## The Problem — The Indian Data Deficit
-
-### Failure of Western ADAS
-
-Standard Advanced Driver Assistance Systems (ADAS) are trained on predictable, rule-compliant Western roads. These models assume clear lane markings, regulated intersections, standardized signage, and law-abiding road users — assumptions that **consistently fail in India's chaotic, unstructured traffic environment**.
-
-### Sensor Blindness in Premium Vehicles
-
-Even premium vehicles equipped with state-of-the-art ADAS currently face critical issues on Indian roads:
-
-| Issue | Root Cause |
-|-------|-----------|
-| **False positives** | Stray animals, hand-painted signs, and jaywalkers trigger incorrect alerts |
-| **Sudden braking** | Autorickshaws and two-wheelers making unpredictable lane changes |
-| **Sensor confusion** | Missing lane markings, unmarked speed bumps, construction zones |
-| **Weather blindness** | Monsoon rain, dust storms, and fog endemic to the subcontinent |
-| **Intersection deadlocks** | Unregulated multi-way junctions with no traffic signals |
-
-### The True Bottleneck
-
-> **The main barrier to autonomous driving in emerging markets is not a lack of computing power, but a severe deficit of geographically specific, edge-case-rich training data.**
-
-Western datasets (nuScenes, Waymo Open, KITTI) contain virtually no representation of:
-- Unmarked rural highways shared with bullock carts
-- Dense urban intersections with 6+ vehicle types simultaneously
-- Hand-painted or non-standard road signage
-- Two-wheelers carrying 3–4 passengers with no helmets
-- Animals (cows, dogs, camels) as static road obstacles
-- Night driving with no street lighting and oncoming high beams
+Western open datasets (nuScenes, Waymo, KITTI) contain essentially zero representation of Indian road conditions.
 
 ---
 
-## The Solution — Edge-Optimized Hardware
+## 💡 The Solution — Phone as the Edge Node
 
-The platform relies on a **budget-friendly hardware device** engineered for mass consumer deployment — designed to be as cheap and unobtrusive as a traditional dashcam.
+Instead of dedicated hardware, we turn every Android phone into an ADAS sensor:
 
-### Core Unit
+- 📷 **Camera** — High-resolution sensor already built in
+- 🧠 **NPU/GPU** — Runs quantized TFLite models at real-time frame rates
+- 📡 **Connectivity** — Wi-Fi / LTE already present for selective cloud upload
+- 🔋 **Power** — Charged via car USB / wireless pad
 
-The **Raspberry Pi Zero 2W** is selected as the optimal processing unit, offering a unique balance of:
-- **Ultra-low cost** (~₹1,500 / $18) for mass deployment feasibility
-- **Sufficient compute** — quad-core ARM Cortex-A53 @ 1 GHz with 512 MB RAM
-- **Low power draw** — can be powered directly from a vehicle's USB port
-- **Compact form factor** — 65mm × 30mm, easily mounted behind a rearview mirror
-
-### Sensor Integration
-
-| Component | Purpose | Interface |
-|-----------|---------|-----------|
-| **HD Camera Module** | Visual data capture (720p @ 15 FPS) | CSI / USB |
-| **GNSS Module** (u-blox NEO-6M) | Precise geolocation & route mapping | UART |
-| **4G LTE Module** (SIM7600) | Cloud data transmission for edge cases | USB |
-| **OBD-II Adapter** (ELM327) | Vehicle telematics extraction | Bluetooth / CAN |
-
-### Telematics Extraction
-
-Crucially, the device interfaces with the vehicle's **OBD-II diagnostic port** to capture granular mechanical data, directly correlating **human driver intent** with visual observation:
-
-- 🏎️ **Speed & RPM** — Captures driving velocity and engine state
-- 🔄 **Steering Angle** — Records the exact steering input at any moment
-- 🛑 **Brake Pressure** — Detects hard braking events and panic stops
-- ⛽ **Throttle Position** — Measures acceleration behavior
-
-This multimodal pairing of *what the driver sees* with *what the driver does* creates an exceptionally rich training signal for imitation-learning–based autonomous driving models.
+This eliminates the need for a Raspberry Pi, ESP32, or any dedicated hardware — your daily driver phone **is** the edge node.
 
 ---
 
-## System Architecture
-
-### High-Level Pipeline
+## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        EDGE DEVICE (Pi Zero 2W)                        │
-│                                                                         │
-│   Camera (OpenCV)                                                       │
-│        │                                                                │
-│        ▼                                                                │
-│   Frame Buffer ──────► YOLOv8n Inference ──────► Confidence Filter      │
-│   (Ring Buffer)         (320px, quantized)       (Adaptive Threshold)   │
-│        │                      │                        │                │
-│        │              Kalman Tracker                   │                │
-│        │          (persistent object IDs)              │                │
-│        │              Trajectory Analyzer              │                │
-│        │               (erratic motion)                │                │
-│        │                                               ▼                │
-│   OBD-II / CAN Bus                             ┌─────────────┐        │
-│        │                                        │ Data Logger  │        │
-│        ▼                                        │ (SD Card)    │        │
-│   Telemetry Buffer ────────────────────────────►│ • Frames     │        │
-│   (10 Hz sampling)                              │ • Telemetry  │        │
-│        │                                        │ • Video Clips│        │
-│   Clip Buffer ─────────────────────────────────►└──────┬──────┘        │
-│   (Rolling 2s window)                                  │               │
-│                                                         │               │
-│   PII Blur (Edge) ◄────────────────────────────────────┘               │
-│        │                                                                │
-└────────┼────────────────────────────────────────────────────────────────┘
-         │ (4G LTE — anomaly packets only)
-         ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           CLOUD PLATFORM                                │
-│                                                                         │
-│   Ingestion → ConvLSTM Temporal Scorer → Annotation → VLM Training     │
-│               (Spatio-Temporal Anomaly)  (3D Scenes)   (Fine-tuning)   │
-│                                                                         │
-│   B2B SaaS Dashboard ◄──────────────────────── Pre-trained Model APIs  │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    ANDROID ADAS APP (On-Device)                  │
+│                                                                   │
+│  Rear Camera (MIPI)                                              │
+│       │                                                          │
+│       ▼                                                          │
+│  CameraX ImageAnalysis ──► FrameAnalyzer (background coroutine) │
+│                                    │                             │
+│                                    ▼                             │
+│                          InferenceEngine (TFLite INT8)           │
+│                           YOLOv8n @ 320px                        │
+│                                    │                             │
+│                          List<Detection>                         │
+│                     {label, confidence, boundingBox}             │
+│                                    │                             │
+│       ┌────────────────────────────┘                             │
+│       │                                                          │
+│       ▼                                                          │
+│  DetectionOverlay (Compose Canvas, transparent)                  │
+│  ┌──────────────────────────────────────────────┐               │
+│  │  [CameraX PreviewView — full screen]          │               │
+│  │                                               │               │
+│  │   ┌─────────┐  vehicle 87%                    │               │
+│  │   │ ╔═════╗ │                                 │               │
+│  │   │ ║     ║ │  ┌───┐ person 73%               │               │
+│  │   │ ╚═════╝ │  └───┘                          │               │
+│  └──────────────────────────────────────────────┘               │
+│                                                                   │
+└────────────────────────────┬────────────────────────────────────┘
+                             │  (Wi-Fi / LTE — anomaly clips only)
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLOUD BACKEND                            │
+│                                                                   │
+│   Ingestion API → ConvLSTM Temporal Scorer → Annotation Store    │
+│                                                                   │
+│   B2B SaaS Dashboard ◄──────────── VLM Fine-tuning Pipeline     │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
-### Module-Level Architecture (Current MVP)
-
-```
-Camera (OpenCV) ──► Frame Buffer ──► YOLOv8n Inference ──► Adaptive Threshold
-                         │                   │                      │
-                    Clip Buffer        Kalman Tracker          Anomaly?
-                  (rolling 2s)     (persistent IDs,       (environment-aware
-                         │          trajectory scores)     dynamic cutoff)
-                         │                   │                      │
-                         └───────────────────┴──────────────────────┤
-                                                                    ▼
-OBD-II Simulator ──► Telemetry Buffer ───────────────────► Data Logger
-                                                            (SD Card)
-                                                          ┌──────────┐
-                                                          │ • .jpg   │
-                                                          │ • .json  │
-                                                          │ • .npz   │
-                                                          └──────────┘
-                                                               │
-                                                    ── 4G Upload ──
-                                                               │
-                                              Cloud: ConvLSTM Scorer
-                                              (Spatio-Temporal Analysis)
-```
-
-The pipeline runs **three concurrent threads** coordinated by a central orchestrator:
-
-1. **Camera Thread** — Continuously captures frames into a fixed-size ring buffer (prevents RAM exhaustion on the Pi Zero's 512 MB)
-2. **OBD-II Thread** — Samples vehicle telemetry at 10 Hz, maintaining the latest snapshot
-3. **Main Thread** — Pulls the latest frame + telemetry, runs YOLOv8 inference, applies Kalman tracking + adaptive threshold, and decides whether to persist the data
-
----
-
-## AI Pipeline & Active Learning
-
-### The Bandwidth Problem
-
-Continuously streaming HD video over 4G/LTE networks from millions of devices would incur **astronomical cloud bandwidth costs** — potentially ₹50,000+/device/year. The system solves this with an intelligent filtering mechanism.
-
-### Active Learning Strategy
-
-The device runs a **lightweight local model** (quantized YOLOv8 Nano at 320px resolution) to compute uncertainty scores in real-time:
-
-```
-Frame Captured
-      │
-      ▼
-Run YOLOv8n Inference (320px)
-      │
-      ├──► Kalman Tracker (assign persistent IDs)
-      │        └──► Trajectory Analyzer (flag erratic motion)
-      │
-      ├──► Adaptive Threshold (environment-aware)
-      │        └──► Adjusts based on: night/rain/traffic/open road
-      │
-      ▼
-Anomaly Decision:
-      ├── confidence ≥ dynamic_threshold ──► DISCARD
-      │
-      └── confidence < dynamic_threshold ──► SAVE & UPLOAD
-              or no detections ──► SAVE & UPLOAD
-              or erratic trajectory ──► SAVE & UPLOAD
-```
-
-### Why This Works
-
-| Scenario | Model Confidence | Adaptive Threshold | Action |
-|----------|:---------------:|:------------------:|--------|
-| Clear highway with marked lanes | **High** (0.7+) | 0.52 | Discard — routine |
-| Standard intersection with traffic | **Medium** (0.4–0.7) | 0.38 | Discard — routine |
-| Cow blocking a rural highway | **Low** (<0.35) | 0.28 | **Save** — rare edge case |
-| Night driving, unlit road | **Low** (<0.20) | 0.08 (adapted) | **Save** — only the most unusual |
-| Monsoon rain, all frames confused | **Low** (<0.25) | 0.05 (adapted) | Save only **extreme** cases |
-| Vehicle swerving erratically | **Medium** (0.50) | 0.40 | **Save** — Kalman flags trajectory |
-
-> 💡 The adaptive threshold prevents **storage flooding** in bad conditions (night, rain) by recognizing that low confidence is *normal* in those environments and adjusting accordingly.
-
-This selective approach reduces upload volume by an estimated **85–95%**, transmitting only the most valuable data packets to the cloud.
-
----
-
-## 🆕 Kalman Tracker & Multi-Object Tracking
-
-### Why Track Objects?
-
-Without tracking, each frame is analyzed in isolation — the system knows *a car exists* but not *which car* or *where it's going*. The Kalman Tracker adds **temporal intelligence**:
-
-```
-Without Tracking:                    With Kalman Tracking:
-  Frame 1: "car at (200, 300)"       Frame 1: "car #1 at (200, 300)"
-  Frame 2: "car at (210, 305)"       Frame 2: "car #1 → moving right at 10px/f"
-  Frame 3: (YOLO miss)               Frame 3: "car #1 predicted at (220, 310)" ✓
-  Frame 4: "car at (230, 310)"       Frame 4: "car #1 confirmed, speed=12.5px/f"
-```
-
-### Architecture
-
-The tracker uses a **7D Kalman Filter** with a constant-velocity motion model:
-
-| Component | Purpose |
-|-----------|---------|
-| **`KalmanBoxTracker`** | Single-object tracker with state `[cx, cy, area, aspect_ratio, dx, dy, d_area]` |
-| **`MultiObjectTracker`** | Manages all tracks — creates, matches (greedy IoU), and removes stale ones |
-| **`TrajectoryAnalyzer`** | Scores each track's trajectory for anomalous behavior (sharp turns, sudden acceleration, lateral jitter) |
-
-### Trajectory Anomaly Detection
-
-The `TrajectoryAnalyzer` flags erratic movement patterns that a single-frame YOLO pass cannot detect:
-
-| Metric | What It Measures | Weight |
-|--------|-----------------|:------:|
-| Direction changes | Sharp turns (>45° in 3 frames) | 40% |
-| Acceleration | Sudden speed changes | 35% |
-| Heading variance | Lateral jitter / weaving | 25% |
-
-```python
-from src.kalman_tracker import MultiObjectTracker, TrajectoryAnalyzer
-
-tracker = MultiObjectTracker()
-analyzer = TrajectoryAnalyzer()
-
-# Each frame: feed YOLO detections
-tracked = tracker.update([[100, 200, 150, 280, 0.85, "car"]])
-scores = analyzer.analyze(tracker.get_all_tracks())
-
-for s in scores:
-    if s.is_erratic:
-        print(f"⚠ Object #{s.track_id} ({s.class_name}): {s.reason}")
-        # "⚠ Object #3 (car): 4 sharp direction change(s); high acceleration"
-```
-
----
-
-## 🆕 Adaptive Threshold — Environment-Aware Filtering
-
-### The Problem with Fixed Thresholds
-
-A static `CONFIDENCE_THRESHOLD = 0.35` causes:
-- **Night driving**: Saves every dark frame (SD card floods)
-- **Monsoon rain**: Saves every rainy frame (model is always confused)
-- **Clear highway**: Misses subtle anomalies (threshold too permissive)
-
-### The Solution
-
-The `AdaptiveThreshold` dynamically adjusts based on recent driving conditions:
-
-```
-threshold = clamp(rolling_mean − k × rolling_std, 0.10, 0.60)
-```
-
-Where **k** (sensitivity) varies by automatically detected environment:
-
-| Environment | Detection Method | Sensitivity (k) | Effect |
-|-------------|-----------------|:----------------:|--------|
-| ☀️ Clear Day | Bright frame, moderate detections | 1.0 | Standard |
-| 🌙 Night | Low brightness (<0.25) | 1.5 | More selective |
-| 🌧️ Rain/Fog | Medium brightness, low variance | 1.5 | More selective |
-| 🚗 Dense Traffic | 5+ simultaneous detections | 1.2 | Slightly selective |
-| 🛣️ Open Road | 0–1 detections | 0.8 | More sensitive |
-
-```python
-from src.adaptive_threshold import AdaptiveThreshold
-
-threshold = AdaptiveThreshold()
-
-result = threshold.update(
-    max_confidence=0.42,
-    frame_brightness=0.10,   # dark frame → NIGHT
-    num_detections=1,
-)
-
-print(result.dynamic_threshold)  # 0.08 (adapted for night)
-print(result.environment)        # "night"
-print(result.is_anomaly)         # True (0.42 is unusual for night)
-```
-
----
-
-## 🆕 Spatio-Temporal Anomaly Scoring (ConvLSTM)
-
-### Why Temporal Analysis?
-
-A single frame tells you *a cow is there*. A sequence of frames tells you *the cow suddenly bolted across the road while the car was doing 60 km/h*. The **ConvLSTM** (Convolutional LSTM) model captures this temporal context.
-
-### Architecture
-
-```
-Input: Video Clip (batch, seq_len, 3, 128, 128)
-                    │
-        ┌───────────┴───────────┐
-        │  CNN Feature Extractor │  3 conv layers, 8× spatial downsample
-        │  (per frame)           │  Conv(3→32→64→64) + BN + ReLU + MaxPool
-        └───────────┬───────────┘
-                    │  Feature maps: (batch, seq, 64, 16, 16)
-        ┌───────────┴───────────┐
-        │  ConvLSTM Layer        │  Convolutional gates (i/f/o/g)
-        │  (processes sequence)  │  Preserves spatial structure
-        └───────────┬───────────┘
-                    │  Final hidden: (batch, 64, 16, 16)
-        ┌───────────┴───────────┐
-        │  Classification Head   │  Global Avg Pool → FC(64→128)
-        │                        │  → Dropout(0.3) → FC(128→1) → Sigmoid
-        └───────────┬───────────┘
-                    │
-              Score ∈ [0, 1]
-```
-
-- **~500K parameters** — lightweight for cloud CPU inference
-- Supports **multi-layer stacking** and batch processing
-- Includes **MockTemporalScorer** fallback using frame differencing
-
-### Edge-Cloud Split
-
-| Edge (Pi Zero 2W) | Cloud (Server) |
-|:------------------:|:--------------:|
-| `ClipBuffer` captures rolling 2s window | `CloudAnomalyScorer` loads .npz clips |
-| Saves .npz clip on anomaly trigger | Runs ConvLSTM inference |
-| ~27 MB RAM for buffer | Produces enriched JSON with temporal score |
-
-```python
-# Cloud-side scoring
-from src.cloud_scorer import CloudAnomalyScorer
-
-scorer = CloudAnomalyScorer()
-scorer.load_model()
-
-result = scorer.score_clip("data/clips/20260403_021500_clip.npz")
-print(result.temporal_score)        # 0.78
-print(result.is_critical_anomaly)   # True
-print(result.description)
-# "[HIGH] Temporal anomaly score: 0.780 | 15 frames over 1.0s |
-#  Avg motion: 0.0842, Peak motion: 0.1523 | Significant temporal anomaly..."
-```
-
----
-
-## VLM Optimization by Layering
-
-The data collected by the edge fleet feeds a **4-layer VLM training pipeline** that minimizes compute cost while maximizing India-specific driving understanding:
-
-```
-Layer 1: Frozen Vision Encoder (CLIP/SigLIP)     ← NOT retrained (saves 80% compute)
-           │
-Layer 2: Trainable Projection MLP                ← Learns India-specific mappings
-           │                                        (cow → "large static animal obstacle")
-Layer 3: LoRA-Finetuned LLM (LLaMA/Gemma)        ← Only 0.1% params trained
-           │                                        (learns driving reasoning)
-Layer 4: Temporal Fusion (ConvLSTM features)      ← Adds motion/trajectory context
-           │
-         Output: Rich driving descriptions + risk scores
-```
-
-| Approach | Trainable Params | GPU Hours | Cost |
-|----------|:---------------:|:---------:|:----:|
-| Full VLM fine-tune | ~7B | 500+ | $$$$ |
-| Layered (freeze + LoRA + fusion) | ~12M | 25–60 | $ |
-
----
-
-## Consumer Incentive Model (Solving the "Cold Start")
-
-### 1. 🪙 Tokenomics (DePIN)
-
-Drivers earn **passive income** via cryptographic tokens, weighted by the **rarity** of collected data.
-
-### 2. 🛡️ Usage-Based Insurance (UBI)
-
-Safe drivers earn up to **25–30% discounts** on annual car insurance via verified OBD-II telematics.
-
-### 3. 📹 On-Device Utility
-
-- **Legal protection** — timestamped footage for disputes
-- **Drowsiness detection** — real-time acoustic alarms
-- **Hazard alerts** — forward collision warnings
-- **Route analytics** — driving insights via companion app
-
----
-
-## Business Model — B2B SaaS
-
-| Tier | Offering | Target Customer |
-|------|----------|----------------|
-| **Data Lake Access** | Raw anonymized video + telemetry | R&D labs, academic institutions |
-| **Annotated Datasets** | 3D scene graphs, semantic segmentation | ADAS engineering teams |
-| **Pre-trained VLM APIs** | Fine-tuned models via REST API | OEMs integrating L2/L3 autonomy |
-| **Custom Model Training** | Dedicated fine-tuning on OEM platforms | Premium OEM partnerships |
-
-**Target Customers:** Tata Motors, Mahindra & Mahindra, Ola Electric, Hyundai, Kia, Toyota
-
----
-
-## Privacy & Compliance
-
-### Privacy by Design (DPDP Act 2023)
-
-| Layer | Mechanism | Description |
-|-------|----------|-------------|
-| **Edge** | PII Blur | On-device face & license plate blurring |
-| **Transit** | TLS 1.3 | End-to-end encrypted transmission |
-| **Cloud** | Anonymization | Location aggregated to 100m grid cells |
-| **Architecture** | Federated Learning | Only model gradients uploaded |
-| **Policy** | Consent-First | Explicit opt-in with granular controls |
 
 ---
 
 ## 📱 Android ADAS App
 
-The hardware pipeline has been migrated from a Raspberry Pi / ESP32 to a **native Android app** that uses the phone's built-in camera and NPU for zero-latency, fully on-device inference.
+The app is written in **Kotlin with Jetpack Compose**. It is a single-activity application that:
 
-### Architecture
+1. Requests camera permission at runtime
+2. Opens the rear camera full-screen via `CameraX PreviewView`
+3. Extracts frames on a background coroutine via `CameraX ImageAnalysis`
+4. Runs TFLite detection inference without blocking the UI thread
+5. Draws colored bounding boxes on a transparent Compose Canvas overlay
 
+### CameraX Pipeline
+
+**[`AdasCameraScreen.kt`](android_app/app/src/main/java/com/example/adas/AdasCameraScreen.kt)**
+
+Binds two CameraX use-cases simultaneously in a `LaunchedEffect`:
+
+| Use-case | Purpose |
+|----------|---------|
+| `Preview` | Renders the live camera feed into a `PreviewView` |
+| `ImageAnalysis` | Delivers `ImageProxy` frames to `FrameAnalyzer` |
+
+```kotlin
+val imageAnalysis = ImageAnalysis.Builder()
+    .setResolutionSelector(ResolutionSelector.Builder()
+        .setResolutionStrategy(ResolutionStrategy(Size(640, 480), FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+        .build())
+    .setBackpressureStrategy(STRATEGY_KEEP_ONLY_LATEST) // drop stale frames
+    .build()
+    .also { it.setAnalyzer(executor, analyzer) }
+
+cameraProvider.bindToLifecycle(lifecycleOwner, BACK_CAMERA, preview, imageAnalysis)
 ```
-[CameraX Preview]  ─────────────────────────────────────────┐
-                                                             │ (same screen)
-[CameraX ImageAnalysis] → [FrameAnalyzer] → [InferenceEngine]
-     (rear camera)          (background        (TFLite INT8)
-                             coroutine)
-                                  │
-                          [DetectionOverlay]  ◄── LiveData
-                        (Compose Canvas, transparent)
+
+**[`FrameAnalyzer.kt`](android_app/app/src/main/java/com/example/adas/FrameAnalyzer.kt)**
+
+Implements `ImageAnalysis.Analyzer`. Uses CameraX's built-in `ImageProxy.toBitmap()` extension for efficient YUV→Bitmap conversion, then launches inference on `Dispatchers.Default`.
+
+```kotlin
+override fun analyze(image: ImageProxy) {
+    val bitmap = image.toBitmap()   // CameraX built-in extension
+    image.close()
+    analyzerScope.launch {
+        val results = engine.detect(bitmap)
+        withContext(Dispatchers.Main) { onResults(results) }
+    }
+}
 ```
 
-### Key Components
+### Inference Engine
 
-| File | Role |
-|------|------|
-| `MainActivity.kt` | Runtime camera permission gate |
-| `AdasCameraScreen.kt` | Binds CameraX Preview + Analysis to lifecycle |
-| `FrameAnalyzer.kt` | Extracts YUV frames on a background coroutine |
-| `InferenceEngine.kt` | TFLite wrapper — swap in your `.tflite` model |
-| `DetectionOverlay.kt` | Transparent Compose Canvas with colored bounding boxes & labels |
+**[`InferenceEngine.kt`](android_app/app/src/main/java/com/example/adas/InferenceEngine.kt)**
 
-### Adding a Real Model
+Provides a `suspend fun detect(bitmap: Bitmap): List<Detection>` that runs on `Dispatchers.Default`.
 
-1. Export YOLOv8n to TFLite: `yolo export model=yolov8n.pt format=tflite imgsz=320`
-2. Copy the output `.tflite` to `android_app/app/src/main/assets/yolov8n.tflite`
-3. Uncomment the `Interpreter` block in [`InferenceEngine.kt`](android_app/app/src/main/java/com/example/adas/InferenceEngine.kt)
+- **Mock mode (default):** Ships with animated deterministic bounding boxes (vehicle, person, motorcycle) so the overlay renders and can be validated immediately without a model file.
+- **Real mode:** Drop a `.tflite` file in `assets/` and uncomment the `Interpreter` block. See [Plugging in a Real Model](#-plugging-in-a-real-tflite-model).
 
-### Building from Source
+```kotlin
+data class Detection(
+    val label: String,
+    val confidence: Float,
+    val boundingBox: RectF  // normalized [0,1] coordinates
+)
+```
 
-```bash
-# Prerequisites: JDK 17, Android SDK (API 36)
-cd android_app
-./gradlew assembleDebug
-# APK → app/build/outputs/apk/debug/app-debug.apk
+### Detection Overlay
+
+**[`DetectionOverlay.kt`](android_app/app/src/main/java/com/example/adas/DetectionOverlay.kt)**
+
+A Compose `Canvas` composable layered over the `PreviewView`. On every new `List<Detection>` it draws:
+
+- **Colored bounding box** — each class has a distinct color (Cyan = vehicle, Pink = person, Amber = motorcycle)
+- **Corner accent marks** — tactical HUD-style corner brackets
+- **Label badge** — filled rectangle with class name + confidence percentage
+
+Color mapping:
+```kotlin
+val labelColors = mapOf(
+    "vehicle"    to Color(0xFF00E5FF),  // Cyan
+    "person"     to Color(0xFFFF4081),  // Pink
+    "motorcycle" to Color(0xFFFFD740),  // Amber
+    "truck"      to Color(0xFF69F0AE),  // Green
+    "bus"        to Color(0xFFE040FB),  // Purple
+)
 ```
 
 ---
 
-## ⬇️ Download APK
+## ☁️ Cloud Backend
 
-> The debug APK is built and ready to sideload. It works on any Android phone running **Android 7.0 (API 24) or higher**.
+The cloud side receives anomaly clips and telemetry from the app over Wi-Fi/LTE. Code lives in `cloud_backend/`.
 
-**APK location in this repo:**
+| File | Role |
+|------|------|
+| `cloud_scorer.py` | Loads `.npz` frame clips, runs ConvLSTM inference, returns enriched JSON with temporal anomaly score |
+
+The **ConvLSTM** (~500K parameters) processes sequences of frames to detect time-dependent anomalies (e.g., a vehicle that *suddenly* swerves, rather than just one that exists in a frame).
+
+```python
+from cloud_backend.cloud_scorer import CloudAnomalyScorer
+
+scorer = CloudAnomalyScorer()
+scorer.load_model()
+
+result = scorer.score_clip("clips/20260403_031425_clip.npz")
+print(result.temporal_score)      # 0.78
+print(result.is_critical_anomaly) # True
+```
+
+---
+
+## 🐍 Legacy Edge Modules (Python)
+
+The original Raspberry Pi Python pipeline is preserved in `legacy_python_edge/src/` as a reference implementation and for development/testing purposes.
+
+| Module | What it does |
+|--------|-------------|
+| `camera_module.py` | Threaded OpenCV frame capture into a ring buffer |
+| `obd_simulator.py` | Generates realistic OBD-II telemetry at 10 Hz (speed, RPM, steering, brake) |
+| `active_learner.py` | YOLOv8n inference + active learning uncertainty scoring |
+| `adaptive_threshold.py` | Environment-aware dynamic anomaly threshold (adapts to night, rain, traffic) |
+| `kalman_tracker.py` | Multi-object Kalman tracker with persistent IDs and trajectory analysis |
+| `clip_buffer.py` | Rolling 2-second frame window; flushes to `.npz` on anomaly trigger |
+| `temporal_model.py` | ConvLSTM network definition (~500K params, PyTorch) |
+| `data_logger.py` | Synchronized JPEG frame + JSON telemetry writer |
+| `main.py` | `EdgeDashPipeline` orchestrator — starts all threads, runs main loop |
+
+### Run the Python Pipeline
+
+```bash
+cd legacy_python_edge
+
+# Install dependencies
+pip install -r ../requirements.txt
+
+# Optional: download YOLOv8n weights
+python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+mv yolov8n.pt models/
+
+# Run (works without Pi, camera, or real OBD hardware — all mocked)
+python -m src.main
+```
+
+### Automated Tests (78 total)
+
+```bash
+python -m pytest ../tests/ -v
+
+# By suite:
+python -m pytest ../tests/test_kalman_tracker.py -v       # 30 tests
+python -m pytest ../tests/test_adaptive_threshold.py -v   # 21 tests
+python -m pytest ../tests/test_temporal.py -v             # 27 tests
+```
+
+| Suite | Tests | Coverage |
+|-------|:-----:|----------|
+| `test_kalman_tracker` | 30 | IoU computation, greedy matching, predict/update, trajectory scoring |
+| `test_adaptive_threshold` | 21 | Environment classification, threshold clamping, sensitivity multipliers |
+| `test_temporal` | 27 | ClipBuffer ops, ConvLSTM shapes, MockTemporalScorer, CloudAnomalyScorer |
+
+---
+
+## 🔌 ESP32-P4-EYE Firmware (Archived)
+
+An intermediate hardware exploration — a FreeRTOS/C++ firmware scaffold for the ESP32-P4-EYE microcontroller. Archived in `esp32_firmware/` for reference.
+
+| File | Role |
+|------|------|
+| `main.cpp` | `app_main()` entry point — spawns FreeRTOS tasks |
+| `camera_task.cpp` | MIPI-CSI camera capture stub |
+| `inference_task.cpp` | ESP-DL TFLite inference stub |
+| `h264_encoder_task.cpp` | Hardware H.264 encoder / rolling buffer stub |
+| `can_obd_task.cpp` | TWAI (CAN bus) OBD-II communication stub |
+| `kalman_tracker.cpp` | C++ Kalman filter implementation |
+| `yolov8_quantization_guide.md` | Steps to convert `.pt` → INT8 `.tflite` for ESP-DL |
+
+> The ESP32-P4 architecture was superseded by the Android app, which provides superior processing power, camera quality, and connectivity with zero additional hardware cost.
+
+---
+
+## ⬇️ Download & Install
+
+> Works on any Android phone running **Android 7.0 (API 24) or higher**.
+
+**APK path in this repo:**
 ```
 android_app/app/build/outputs/apk/debug/app-debug.apk   (~27 MB)
 ```
 
-### Install via ADB (USB)
+### Option 1 — ADB (Recommended)
 
 ```powershell
-# 1. Enable Developer Options → USB Debugging on your phone
-# 2. Connect via USB, then:
+# Enable Developer Options → USB Debugging on your phone
+# Connect via USB, then run from the project root:
+
+$env:PATH += ";C:\Users\MANISH KUMAR\AppData\Local\Android\Sdk\platform-tools"
 adb install android_app\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-### Sideload (Direct)
+### Option 2 — Direct Sideload
 
-1. Copy `app-debug.apk` to your phone
-2. Go to **Settings → Install Unknown Apps** → allow your file manager
-3. Tap the APK to install
+1. Transfer `app-debug.apk` to your phone (USB / Google Drive / email)
+2. **Settings → Apps → Special App Access → Install Unknown Apps** → allow your file manager
+3. Tap the APK file to install
 
-> ⚠️ **Note:** This is a debug build. For production, run `./gradlew assembleRelease` and sign with your keystore.
-
----
-
-## Project Structure
-
-```
-ADAS/
-├── android_app/                   # 📱 Native Android ADAS App (Kotlin + Compose)
-│   ├── app/src/main/java/com/example/adas/
-│   │   ├── MainActivity.kt        # Entry point + permission gate
-│   │   ├── AdasCameraScreen.kt    # CameraX Preview + ImageAnalysis binding
-│   │   ├── FrameAnalyzer.kt       # Background frame extractor
-│   │   ├── InferenceEngine.kt     # TFLite inference engine (mock + real)
-│   │   ├── DetectionOverlay.kt    # Compose Canvas bounding box overlay
-│   │   └── Detection.kt           # Detection data class
-│   └── app/build/outputs/apk/debug/app-debug.apk  # ⬇️ Prebuilt APK
-│
-├── esp32_firmware/                # 🔌 ESP32-P4-EYE C++ firmware (archived)
-│   └── main/                      # FreeRTOS tasks: camera, inference, H.264, CAN
-│
-├── legacy_python_edge/            # 🐍 Original Raspberry Pi Python edge code
-│   └── src/
-│       ├── camera_module.py       # Threaded OpenCV frame capture
-│       ├── obd_simulator.py       # Mock CAN bus telematics generator
-│       ├── active_learner.py      # YOLOv8n inference & uncertainty scoring
-│       ├── kalman_tracker.py      # Multi-object Kalman tracker
-│       ├── adaptive_threshold.py  # Environment-aware dynamic threshold
-│       ├── clip_buffer.py         # Rolling frame buffer
-│       ├── temporal_model.py      # ConvLSTM spatio-temporal scorer
-│       └── main.py                # EdgeDashPipeline orchestrator
-│
-├── cloud_backend/                 # ☁️ Cloud-side scoring & ingestion
-│   └── cloud_scorer.py            # Loads .npz clips, runs ConvLSTM inference
-│
-├── tests/                         # 78 automated tests
-├── requirements.txt               # Python dependencies
-└── README.md
-```
-
-### Module Responsibilities
-
-| Module | Responsibility | Runs On |
-|--------|---------------|:-------:|
-| `camera_module.py` | Captures frames via OpenCV into a fixed-size ring buffer. Prevents RAM overflow on 512 MB. | 🥧 Pi |
-| `obd_simulator.py` | Generates realistic OBD-II telemetry (speed, RPM, steering, brake pressure) at 10 Hz. | 🥧 Pi |
-| `active_learner.py` | Runs YOLOv8 Nano inference at 320px. Applies uncertainty threshold to flag edge cases. | 🥧 Pi |
-| `data_logger.py` | Persists anomaly frames as JPEG + correlated telemetry as JSON. | 🥧 Pi |
-| `main.py` | Orchestrates the pipeline lifecycle: starts threads, runs the main loop, monitors memory. | 🥧 Pi |
-| `config.py` | Centralized constants for camera, OBD, YOLO, system resources, and logging. | 🥧 Pi |
-| `kalman_tracker.py` | Assigns persistent IDs to detections using Kalman filter. Analyzes trajectories. | 🥧 Pi |
-| `adaptive_threshold.py` | Environment-aware dynamic threshold. Classifies driving conditions. | 🥧 Pi |
-| `clip_buffer.py` | Maintains rolling 2-second frame window. Captures clips around anomaly events. | 🥧 Pi |
-| `temporal_model.py` | ConvLSTM neural network (~500K params). Scores video clips for temporal anomalies. | ☁️ Cloud |
-| `cloud_scorer.py` | Loads .npz clips, runs ConvLSTM inference, produces enriched JSON results. | ☁️ Cloud |
+> ⚠️ **Debug build only.** For a release build, run `./gradlew assembleRelease` and sign with your keystore.
 
 ---
 
-## Quick Start
+## 🛠️ Build from Source
 
 ### Prerequisites
 
-- Python 3.9+
-- (Optional) Raspberry Pi Zero 2W with camera module
-- (Optional) YOLOv8 Nano weights in `models/yolov8n.pt`
-- (Optional) PyTorch — required only for cloud-side temporal model
+| Tool | Version | Purpose |
+|------|---------|---------|
+| JDK | 17+ | Gradle build system |
+| Android SDK | API 36 | Build target |
 
-> **Note:** The system includes mock inference and mock scoring fallbacks — you can run and test everything on any machine without a Pi, YOLO weights, or PyTorch.
-
-### Installation & Run
+### Steps
 
 ```bash
-# 1. Clone the repository
+# 1. Clone the repo
 git clone https://github.com/BHUKKADDD/ADAS.git
-cd ADAS
+cd ADAS/android_app
 
-# 2. Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate        # Linux / macOS
-# venv\Scripts\activate         # Windows
+# 2. Build the debug APK
+./gradlew assembleDebug
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# APK output:
+# app/build/outputs/apk/debug/app-debug.apk
 
-# 4. (Optional) Install new module dependencies
-pip install torch pytest         # For ConvLSTM + testing
-
-# 5. (Optional) Download YOLOv8 Nano weights
-python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
-mv yolov8n.pt models/
-
-# 6. Run the pipeline
-python -m src.main
+# 3. Install directly (device must be connected via ADB)
+./gradlew installDebug
 ```
 
-### Expected Output
-
-```
-03:14:22 [adas            ] INFO    ============================================================
-03:14:22 [adas            ] INFO      ADAS — Advanced Driver Assistance System
-03:14:22 [adas            ] INFO      Confidence threshold: 0.35
-03:14:22 [adas            ] INFO    ============================================================
-03:14:23 [active_learner  ] INFO    YOLOv8 model loaded and warmed up.
-03:14:23 [camera_module   ] INFO    Camera started — index=0  resolution=640x480  target_fps=15
-03:14:23 [obd_simulator   ] INFO    OBD-II simulator started — poll_interval=0.10s
-03:14:23 [adas            ] INFO    All subsystems initialized. Pipeline is RUNNING.
-03:14:25 [active_learner  ] DEBUG   ANOMALY flagged — max_conf=0.182  detections=2  time=87.3ms
-03:14:25 [data_logger     ] INFO    Packet saved: 20260403_031425_123  (frame=45.2 KB)
-```
+On first build, Gradle will automatically download all dependencies (CameraX, TFLite, Accompanist). This takes ~2–3 minutes.
 
 ---
 
-## Raspberry Pi Deployment
+## 🧠 Plugging in a Real TFLite Model
 
-### Hardware Required
+The `InferenceEngine` ships with mock detections. Replacing them with a real model takes 3 steps:
 
-| Component | Model | Cost (approx.) | Interface |
-|-----------|-------|:--------------:|-----------|
-| Computer | Raspberry Pi Zero 2W | ₹1,500 | — |
-| Camera | Pi Camera Module v2 (8MP) | ₹1,200 | CSI ribbon |
-| GPS | u-blox NEO-6M | ₹400 | UART |
-| 4G | SIM7600E-H USB dongle | ₹2,500 | USB |
-| OBD-II | ELM327 v2.1 Bluetooth | ₹500 | Bluetooth |
-| Storage | 32GB+ MicroSD | ₹500 | — |
-| **Total** | | **~₹6,100 (~$73)** | |
-
-### Step-by-Step Setup
+### Step 1 — Export YOLOv8n to TFLite
 
 ```bash
-# 1. Flash Raspberry Pi OS Lite (64-bit) onto MicroSD
-# 2. Enable SSH + Wi-Fi in Raspberry Pi Imager settings
-# 3. SSH into the Pi
-ssh pi@adas-pi.local
-
-# 4. Enable camera
-sudo raspi-config   # → Interface Options → Camera → Enable
-
-# 5. Install system dependencies
-sudo apt update && sudo apt install -y \
-    python3-pip python3-venv python3-opencv \
-    libatlas-base-dev libopenblas-dev
-
-# 6. Transfer project from your PC
-# (from Windows PowerShell)
-scp -r "C:\path\to\ADAS" pi@adas-pi.local:~/ADAS
-
-# 7. Set up Python environment on Pi
-cd ~/ADAS
-python3 -m venv venv
-source venv/bin/activate
-pip install opencv-python-headless numpy psutil Pillow
-
-# 8. (Optional) Download YOLO weights
 pip install ultralytics
-python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
-mv yolov8n.pt models/
-
-# 9. Run!
-python3 -m src.main
+yolo export model=yolov8n.pt format=tflite imgsz=320
+# Output: yolov8n_float32.tflite (or int8 if calibration provided)
 ```
 
-### Auto-Start on Boot
-
+For maximum performance on Android, use INT8 quantization:
 ```bash
-sudo nano /etc/systemd/system/adas.service
+yolo export model=yolov8n.pt format=tflite imgsz=320 int8=True
 ```
 
-```ini
-[Unit]
-Description=ADAS Dashcam Pipeline
-After=multi-user.target
+### Step 2 — Add to Assets
 
-[Service]
-Type=simple
-User=pi
-WorkingDirectory=/home/pi/ADAS
-ExecStart=/home/pi/ADAS/venv/bin/python3 -m src.main
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+```
+android_app/app/src/main/assets/yolov8n.tflite
 ```
 
-```bash
-sudo systemctl enable adas.service
-sudo systemctl start adas.service
-journalctl -u adas -f   # View live logs
+### Step 3 — Uncomment Interpreter Code
+
+In [`InferenceEngine.kt`](android_app/app/src/main/java/com/example/adas/InferenceEngine.kt), uncomment the `Interpreter` block and replace the mock output section with real tensor I/O:
+
+```kotlin
+// 1. Load model
+val model = FileUtil.loadMappedFile(context, "yolov8n.tflite")
+val options = Interpreter.Options().apply { numThreads = 4 }
+val interpreter = Interpreter(model, options)
+
+// 2. Preprocess bitmap → input tensor
+// 3. Run: interpreter.run(inputTensor, outputBuffer)
+// 4. Parse output boxes + scores → List<Detection>
 ```
 
 ---
 
-## Configuration Reference
-
-All tunable parameters live in [`utils/config.py`](utils/config.py):
-
-### Camera Settings
-
-| Parameter | Default | Description |
-|-----------|:-------:|-------------|
-| `CAMERA_INDEX` | `0` | OpenCV camera device index |
-| `CAPTURE_FPS` | `15` | Target frames per second |
-| `FRAME_WIDTH` | `640` | Capture resolution width |
-| `FRAME_HEIGHT` | `480` | Capture resolution height |
-| `JPEG_QUALITY` | `80` | JPEG encode quality (0–100) |
-| `FRAME_BUFFER_SIZE` | `4` | Max frames in ring buffer |
-
-### OBD-II / Telematics
-
-| Parameter | Default | Description |
-|-----------|:-------:|-------------|
-| `OBD_POLL_INTERVAL` | `0.1` s | Telemetry sampling rate (10 Hz) |
-| `OBD_RPM_RANGE` | `700–6500` | Simulated engine RPM |
-| `OBD_SPEED_RANGE` | `0–120` | Simulated speed (km/h) |
-| `OBD_STEERING_RANGE` | `−540–540` | Simulated steering angle (°) |
-
-### Active Learning / YOLO
-
-| Parameter | Default | Description |
-|-----------|:-------:|-------------|
-| `YOLO_MODEL_PATH` | `models/yolov8n.pt` | YOLOv8 Nano weights |
-| `YOLO_IMGSZ` | `320` | Inference resolution |
-| `YOLO_CONF` | `0.25` | YOLO internal confidence filter |
-| `CONFIDENCE_THRESHOLD` | `0.35` | Baseline anomaly threshold |
-
-### System Resources
-
-| Parameter | Default | Description |
-|-----------|:-------:|-------------|
-| `MAX_MEMORY_PERCENT` | `80` | Pause capture if RAM exceeds this % |
-| `GC_INTERVAL_SECONDS` | `30` | Force garbage collection interval |
-
----
-
-## Testing
-
-The project includes **78 automated tests** covering all modules:
-
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Run specific test suites
-python -m pytest tests/test_kalman_tracker.py -v       # 30 tests
-python -m pytest tests/test_adaptive_threshold.py -v   # 21 tests
-python -m pytest tests/test_temporal.py -v             # 27 tests (requires PyTorch)
-```
-
-### Test Coverage
-
-| Test Suite | Tests | What's Covered |
-|-----------|:-----:|----------------|
-| `test_kalman_tracker.py` | 30 | IoU computation, greedy matching, box conversion, Kalman predict/update, multi-object tracking, trajectory analysis |
-| `test_adaptive_threshold.py` | 21 | Environment classification, warmup behavior, threshold adaptation, clamping bounds, sensitivity multipliers, day-to-night transition |
-| `test_temporal.py` | 27 | ClipBuffer operations, ConvLSTM cell shapes, SpatioTemporalScorer forward pass, MockTemporalScorer, CloudAnomalyScorer end-to-end |
-
----
-
-## Hardware Specifications
-
-### Target Device
-
-| Spec | Value |
-|------|-------|
-| **Board** | Raspberry Pi Zero 2W |
-| **SoC** | BCM2710A1 — Quad-core ARM Cortex-A53 @ 1 GHz |
-| **RAM** | 512 MB LPDDR2 |
-| **Connectivity** | 802.11 b/g/n Wi-Fi, Bluetooth 4.2 BLE |
-| **GPIO** | 40-pin header (CSI camera, UART for GNSS) |
-| **Power** | 5V / 2.5A via Micro-USB (vehicle USB port) |
-| **Dimensions** | 65mm × 30mm × 5mm |
-| **Cost** | ~₹1,500 / ~$18 USD |
-
----
-
-## Tech Stack
+## 💻 Tech Stack
 
 ### 📱 Android App
 
-| Layer | Technology |
-|-------|------------|
-| **Language** | Kotlin |
-| **UI** | Jetpack Compose |
-| **Camera** | CameraX 1.4.x (Preview + ImageAnalysis) |
-| **ML Inference** | TensorFlow Lite 2.16 |
-| **Concurrency** | Kotlin Coroutines |
-| **Permissions** | Accompanist Permissions |
-| **Min SDK** | API 24 (Android 7.0) |
-| **Target SDK** | API 36 |
+| Component | Technology |
+|-----------|-----------|
+| Language | Kotlin |
+| UI | Jetpack Compose |
+| Camera | CameraX 1.4.2 (Preview + ImageAnalysis) |
+| ML Inference | TensorFlow Lite 2.16 |
+| Concurrency | Kotlin Coroutines |
+| Permissions | Accompanist Permissions 0.37 |
+| Build System | Gradle 9.1 + AGP 9.0 |
+| Min SDK | API 24 (Android 7.0) |
+| Target SDK | API 36 |
 
-### 🐍 Cloud Backend / Legacy Edge
+### 🐍 Cloud Backend & Legacy Python
 
-| Layer | Technology |
-|-------|------------|
-| **Language** | Python 3.9+ |
-| **Computer Vision** | OpenCV (headless) |
-| **Object Detection** | Ultralytics YOLOv8 Nano |
-| **Object Tracking** | Custom Kalman Filter (numpy) |
-| **Temporal Model** | ConvLSTM (PyTorch, cloud-only) |
-| **Inference Runtime** | ONNX Runtime (ARM-optimized) |
-| **CAN Bus** | python-can (hardware), custom simulator (MVP) |
-| **Image Processing** | Pillow, NumPy |
-| **System Monitoring** | psutil |
-| **Testing** | pytest (78 tests) |
+| Component | Technology |
+|-----------|-----------|
+| Language | Python 3.9+ |
+| Object Detection | Ultralytics YOLOv8 Nano |
+| Computer Vision | OpenCV (headless) |
+| Object Tracking | Custom 7D Kalman Filter (NumPy) |
+| Temporal Model | ConvLSTM (PyTorch, cloud-only, ~500K params) |
+| Inference Runtime | ONNX Runtime (ARM-optimized) |
+| CAN Bus | python-can / custom mock simulator |
+| Image Processing | Pillow, NumPy |
+| Testing | pytest (78 tests) |
 
 ---
 
-## Roadmap
+## 🗺️ Roadmap
 
-- [x] **Phase 1 — MVP Edge Node** *(Complete)*
-  - [x] Threaded camera capture with ring buffer
-  - [x] OBD-II telemetry simulation (CAN bus mock)
-  - [x] YOLOv8 Nano inference with uncertainty scoring
-  - [x] Active learning–based selective data logging
+- [x] **Phase 1 — Python Edge MVP** *(Complete)*
+  - [x] Threaded OpenCV capture with ring buffer
+  - [x] YOLOv8 Nano inference + active learning uncertainty scoring
+  - [x] OBD-II telemetry simulation (10 Hz mock)
   - [x] Memory-safe pipeline with GC and resource monitoring
 
 - [x] **Phase 1.5 — Advanced Edge Intelligence** *(Complete)*
   - [x] Multi-object Kalman tracker with persistent IDs
   - [x] Trajectory anomaly detection (erratic motion scoring)
-  - [x] Adaptive threshold with environment classification
+  - [x] Adaptive threshold with automatic environment classification
   - [x] Rolling clip buffer for temporal context capture
   - [x] ConvLSTM spatio-temporal anomaly scorer (cloud-side)
   - [x] 78 automated tests with full coverage
 
-- [x] **Phase 2 — Mobile ADAS App** *(Complete)*
+- [x] **Phase 2 — Android ADAS App** *(Complete)*
   - [x] Native Android app (Kotlin + Jetpack Compose)
   - [x] Full-screen CameraX rear camera preview
   - [x] Asynchronous background inference pipeline (Coroutines)
-  - [x] TensorFlow Lite inference engine with mock detections
-  - [x] Real-time transparent bounding box + label overlay
-  - [x] Runtime camera permission handling
-  - [x] Debug APK built and ready to sideload
+  - [x] TensorFlow Lite inference engine scaffold
+  - [x] Real-time transparent bounding box overlay with class colors
+  - [x] Runtime camera permission gating
+  - [x] Debug APK built and ready to install
 
-- [ ] **Phase 3 — Mobile + Cloud Integration**
-  - [ ] Plug in real YOLOv8n `.tflite` model
-  - [ ] OBD-II Bluetooth integration (ELM327 via BLE)
-  - [ ] GNSS geolocation tagging
-  - [ ] Wi-Fi / LTE selective upload to cloud ingestion API
-  - [ ] On-device PII blurring (face + license plate)
+- [ ] **Phase 3 — Real Model Integration**
+  - [ ] Plug in YOLOv8n INT8 `.tflite` model trained on Indian road data
+  - [ ] OBD-II Bluetooth integration via ELM327 BLE adapter
+  - [ ] GNSS geolocation tagging on each anomaly packet
+  - [ ] Selective Wi-Fi / LTE upload to cloud ingestion API
+  - [ ] On-device PII blurring (face + license plate, MediaPipe)
 
 - [ ] **Phase 4 — Cloud Platform**
-  - [ ] Data lake ingestion pipeline (S3/GCS)
+  - [ ] Data lake ingestion pipeline (AWS S3 / GCS)
   - [ ] 3D scene graph annotation pipeline
-  - [ ] VLM fine-tuning infrastructure (LoRA + Projection layers)
+  - [ ] VLM fine-tuning infrastructure (LoRA + Projection MLP)
   - [ ] B2B SaaS dashboard for OEM customers
 
-- [ ] **Phase 5 — Consumer Features**
-  - [ ] DePIN tokenomics smart contracts
-  - [ ] Insurtech API integration for UBI scoring
+- [ ] **Phase 5 — Consumer & Scale**
+  - [ ] DePIN tokenomics (data contribution rewards)
+  - [ ] Usage-based insurance API integration
   - [ ] Driver drowsiness detection (face landmark model)
-  - [ ] Real-time forward collision warning audio alerts
-
-- [ ] **Phase 6 — Scale**
+  - [ ] Forward collision warning audio alerts
   - [ ] Fleet management portal
-  - [ ] Federated learning pipeline (privacy-preserving)
   - [ ] Multi-market expansion (Southeast Asia, Africa, LATAM)
 
 ---
 
-## Team
+## 📁 Repository Structure
 
-Built with ❤️ for **Vihaan 9.0 Hackathon**
+```
+ADAS/
+├── android_app/                        # 📱 Native Android ADAS App
+│   ├── app/
+│   │   ├── src/main/
+│   │   │   ├── java/com/example/adas/
+│   │   │   │   ├── MainActivity.kt     # Entry point + permission gate
+│   │   │   │   ├── AdasCameraScreen.kt # CameraX binding + layout
+│   │   │   │   ├── FrameAnalyzer.kt    # Background frame extractor
+│   │   │   │   ├── InferenceEngine.kt  # TFLite wrapper (mock + real)
+│   │   │   │   ├── DetectionOverlay.kt # Compose Canvas overlay
+│   │   │   │   └── Detection.kt        # Data class
+│   │   │   └── assets/                 # ← Put yolov8n.tflite here
+│   │   └── build/outputs/apk/debug/
+│   │       └── app-debug.apk           # ⬇️ Prebuilt APK (~27 MB)
+│   ├── build.gradle.kts
+│   └── gradle/libs.versions.toml
+│
+├── cloud_backend/                      # ☁️ Cloud-side scoring
+│   └── cloud_scorer.py                 # ConvLSTM clip inference
+│
+├── legacy_python_edge/                 # 🐍 Original Raspberry Pi code
+│   └── src/
+│       ├── main.py                     # Pipeline orchestrator
+│       ├── camera_module.py
+│       ├── obd_simulator.py
+│       ├── active_learner.py
+│       ├── adaptive_threshold.py
+│       ├── kalman_tracker.py
+│       ├── clip_buffer.py
+│       └── temporal_model.py
+│
+├── esp32_firmware/                     # 🔌 ESP32-P4 C++ firmware (archived)
+│   └── main/
+│       ├── main.cpp
+│       ├── camera_task.cpp
+│       ├── inference_task.cpp
+│       ├── h264_encoder_task.cpp
+│       ├── can_obd_task.cpp
+│       └── kalman_tracker.cpp
+│
+├── tests/                              # 78 automated tests (pytest)
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## License
+## 📄 License
 
 MIT — See [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
+
+**Built with ❤️ for Vihaan 9.0 IEEE DTU Hackathon**
 
 **🇮🇳 Making India's roads safer, one edge case at a time.**
 
