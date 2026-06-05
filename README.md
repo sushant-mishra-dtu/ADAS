@@ -575,7 +575,7 @@ MIT — See [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**A personal project by [Manish Kumar](https://github.com/BHUKKADDD)**
+**A personal project by [Sushant](https://github.com/BHUKKADDD)**
 
 **🇮🇳 Making India's roads safer, one edge case at a time.**
 
