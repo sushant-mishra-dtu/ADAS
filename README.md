@@ -69,45 +69,91 @@ This eliminates the need for a Raspberry Pi, ESP32, or any dedicated hardware �
 
 ## 🏗️ System Architecture
 
+### Full System — Edge to Cloud
+
+```mermaid
+flowchart TB
+    classDef phone    fill:#1a1a2e,stroke:#3DDC84,stroke-width:2px,color:#3DDC84,font-weight:bold
+    classDef camera   fill:#0f3460,stroke:#00E5FF,stroke-width:2px,color:#00E5FF
+    classDef ml       fill:#16213e,stroke:#FF6F00,stroke-width:2px,color:#FF9800
+    classDef overlay  fill:#0f3460,stroke:#E040FB,stroke-width:2px,color:#E040FB
+    classDef cloud    fill:#1a1a2e,stroke:#4285F4,stroke-width:2px,color:#64B5F6
+    classDef data     fill:#0d1b2a,stroke:#69F0AE,stroke-width:2px,color:#69F0AE
+    classDef decision fill:#1a0a2e,stroke:#FF4081,stroke-width:2px,color:#FF8A80
+
+    subgraph PHONE ["📱 Android ADAS App — On-Device"]
+        direction TB
+        CAM["📷 Rear Camera\nMIPI Sensor"]:::camera
+        CX["CameraX\nImageAnalysis"]:::camera
+        FA["FrameAnalyzer\nBackground Coroutine"]:::camera
+        IE["InferenceEngine\nTFLite INT8 · YOLOv8n @ 320px"]:::ml
+        DET["Detection Results\nlabel · confidence · boundingBox"]:::ml
+        OV["DetectionOverlay\nCompose Canvas · Transparent"]:::overlay
+        PV["PreviewView\nFull-Screen Camera Feed"]:::camera
+    end
+
+    subgraph CLOUD ["☁️ Cloud Backend"]
+        direction LR
+        ING["Ingestion API"]:::cloud
+        CONV["ConvLSTM\nTemporal Scorer"]:::cloud
+        ANN["Annotation Store\n3D Scene Graphs"]:::data
+        VLM["VLM Fine-tuning\nLoRA + Projection MLP"]:::data
+        DASH["B2B SaaS\nDashboard"]:::cloud
+    end
+
+    CAM --> CX --> FA --> IE --> DET --> OV
+    PV -. "rendered behind" .-> OV
+
+    PHONE -- "Wi-Fi / LTE\nAnomaly clips only" --> ING
+    ING --> CONV --> ANN --> VLM --> DASH
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ANDROID ADAS APP (On-Device)                  │
-│                                                                   │
-│  Rear Camera (MIPI)                                              │
-│       │                                                          │
-│       ▼                                                          │
-│  CameraX ImageAnalysis ──► FrameAnalyzer (background coroutine) │
-│                                    │                             │
-│                                    ▼                             │
-│                          InferenceEngine (TFLite INT8)           │
-│                           YOLOv8n @ 320px                        │
-│                                    │                             │
-│                          List<Detection>                         │
-│                     {label, confidence, boundingBox}             │
-│                                    │                             │
-│       ┌────────────────────────────┘                             │
-│       │                                                          │
-│       ▼                                                          │
-│  DetectionOverlay (Compose Canvas, transparent)                  │
-│  ┌──────────────────────────────────────────────┐               │
-│  │  [CameraX PreviewView — full screen]          │               │
-│  │                                               │               │
-│  │   ┌─────────┐  vehicle 87%                    │               │
-│  │   │ ╔═════╗ │                                 │               │
-│  │   │ ║     ║ │  ┌───┐ person 73%               │               │
-│  │   │ ╚═════╝ │  └───┘                          │               │
-│  └──────────────────────────────────────────────┘               │
-│                                                                   │
-└────────────────────────────┬────────────────────────────────────┘
-                             │  (Wi-Fi / LTE — anomaly clips only)
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLOUD BACKEND                            │
-│                                                                   │
-│   Ingestion API → ConvLSTM Temporal Scorer → Annotation Store    │
-│                                                                   │
-│   B2B SaaS Dashboard ◄──────────── VLM Fine-tuning Pipeline     │
-└─────────────────────────────────────────────────────────────────┘
+
+### On-Device Inference Pipeline
+
+```mermaid
+flowchart LR
+    classDef hw     fill:#0f3460,stroke:#00E5FF,stroke-width:2px,color:#00E5FF
+    classDef thread fill:#16213e,stroke:#FF9800,stroke-width:2px,color:#FF9800
+    classDef infer  fill:#1a0a2e,stroke:#FF6F00,stroke-width:2px,color:#FF9800,font-weight:bold
+    classDef ui     fill:#0f3460,stroke:#E040FB,stroke-width:2px,color:#E040FB
+    classDef gate   fill:#1a1a2e,stroke:#FF4081,stroke-width:2px,color:#FF8A80
+
+    CAM["📷 Camera\nMIPI"]:::hw
+    ANAL["ImageAnalysis\nuse-case"]:::hw
+    PROXY["ImageProxy\nYUV_420_888"]:::thread
+    BMP["Bitmap\nConversion\ntoBitmap"]:::thread
+    INF["TFLite\nInterpreter\nDispatchers.Default"]:::infer
+    FILT{"Confidence\n≥ 0.4?"}:::gate
+    OVER["DetectionOverlay\nCompose Canvas\nDispatchers.Main"]:::ui
+    DROP["Drop Frame\n🗑️"]:::gate
+
+    CAM --> ANAL --> PROXY --> BMP --> INF --> FILT
+    FILT -- Yes --> OVER
+    FILT -- No --> DROP
+```
+
+### Cloud Anomaly Scoring Pipeline
+
+```mermaid
+flowchart TD
+    classDef ingest fill:#0f3460,stroke:#4285F4,stroke-width:2px,color:#64B5F6
+    classDef score  fill:#16213e,stroke:#FF6F00,stroke-width:2px,color:#FF9800
+    classDef store  fill:#0d1b2a,stroke:#69F0AE,stroke-width:2px,color:#69F0AE
+    classDef gate   fill:#1a0a2e,stroke:#FF4081,stroke-width:2px,color:#FF8A80
+
+    UPLOAD["📤 Anomaly Clip Upload\n.npz — frames + telemetry"]:::ingest
+    LOAD["Load Clip\nCloudAnomalyScorer"]:::score
+    CONV["ConvLSTM\nSequence Inference\n~500K params"]:::score
+    SCORE{"Temporal\nScore ≥ 0.6?"}:::gate
+    HIGH["🔴 HIGH Priority\nFast-track for annotation"]:::store
+    LOW["🟡 STANDARD\nQueue for batch review"]:::store
+    ANNOT["Annotation Store\n3D Scene Graphs + Labels"]:::store
+    VLM["VLM Training Pipeline\nLoRA Fine-tuning"]:::store
+
+    UPLOAD --> LOAD --> CONV --> SCORE
+    SCORE -- Yes --> HIGH --> ANNOT
+    SCORE -- No  --> LOW  --> ANNOT
+    ANNOT --> VLM
 ```
 
 ---
