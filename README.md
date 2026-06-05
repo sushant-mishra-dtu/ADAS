@@ -2,14 +2,15 @@
 
 # 🚗 ADAS — Decentralized Data Collection Platform for Autonomous Driving in India
 
-**A low-cost, edge-computing dashcam node built on the Raspberry Pi Zero 2W that captures, filters, and logs high-value driving data using active learning — purpose-built for training Vision-Language Models (VLMs) on India's chaotic roads.**
+**A full-stack ADAS platform: a native Android app that runs real-time on-device object detection through your phone's camera, paired with a cloud backend that ingests, scores, and serves high-value driving data to train Vision-Language Models (VLMs) on India's chaotic roads.**
 
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Platform: Raspberry Pi](https://img.shields.io/badge/Platform-Raspberry%20Pi%20Zero%202W-C51A4A?logo=raspberrypi&logoColor=white)](#hardware-specifications)
-[![Model: YOLOv8n](https://img.shields.io/badge/Model-YOLOv8%20Nano-FF6F00)](#ai-pipeline--active-learning)
+[![Platform: Android](https://img.shields.io/badge/Platform-Android%2024%2B-3DDC84?logo=android&logoColor=white)](#-android-adas-app)
+[![Model: YOLOv8n](https://img.shields.io/badge/Model-YOLOv8%20Nano%20%2F%20TFLite-FF6F00)](#ai-pipeline--active-learning)
 [![Tests: 78 Passed](https://img.shields.io/badge/Tests-78%20Passed-brightgreen)](#testing)
 [![Hackathon: Vihaan 9](https://img.shields.io/badge/Hackathon-Vihaan%209-blueviolet)](#)
+[![APK: Download](https://img.shields.io/badge/APK-Download%20Debug-4CAF50?logo=android&logoColor=white)](#-download-apk)
 
 </div>
 
@@ -29,12 +30,12 @@
 - [Consumer Incentive Model](#consumer-incentive-model-solving-the-cold-start)
 - [Business Model — B2B SaaS](#business-model--b2b-saas)
 - [Privacy & Compliance](#privacy--compliance)
+- [📱 Android ADAS App](#-android-adas-app)
+- [⬇️ Download APK](#-download-apk)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
-- [Raspberry Pi Deployment](#raspberry-pi-deployment)
 - [Configuration Reference](#configuration-reference)
 - [Testing](#testing)
-- [Hardware Specifications](#hardware-specifications)
 - [Tech Stack](#tech-stack)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -463,41 +464,111 @@ Safe drivers earn up to **25–30% discounts** on annual car insurance via verif
 
 ---
 
+## 📱 Android ADAS App
+
+The hardware pipeline has been migrated from a Raspberry Pi / ESP32 to a **native Android app** that uses the phone's built-in camera and NPU for zero-latency, fully on-device inference.
+
+### Architecture
+
+```
+[CameraX Preview]  ─────────────────────────────────────────┐
+                                                             │ (same screen)
+[CameraX ImageAnalysis] → [FrameAnalyzer] → [InferenceEngine]
+     (rear camera)          (background        (TFLite INT8)
+                             coroutine)
+                                  │
+                          [DetectionOverlay]  ◄── LiveData
+                        (Compose Canvas, transparent)
+```
+
+### Key Components
+
+| File | Role |
+|------|------|
+| `MainActivity.kt` | Runtime camera permission gate |
+| `AdasCameraScreen.kt` | Binds CameraX Preview + Analysis to lifecycle |
+| `FrameAnalyzer.kt` | Extracts YUV frames on a background coroutine |
+| `InferenceEngine.kt` | TFLite wrapper — swap in your `.tflite` model |
+| `DetectionOverlay.kt` | Transparent Compose Canvas with colored bounding boxes & labels |
+
+### Adding a Real Model
+
+1. Export YOLOv8n to TFLite: `yolo export model=yolov8n.pt format=tflite imgsz=320`
+2. Copy the output `.tflite` to `android_app/app/src/main/assets/yolov8n.tflite`
+3. Uncomment the `Interpreter` block in [`InferenceEngine.kt`](android_app/app/src/main/java/com/example/adas/InferenceEngine.kt)
+
+### Building from Source
+
+```bash
+# Prerequisites: JDK 17, Android SDK (API 36)
+cd android_app
+./gradlew assembleDebug
+# APK → app/build/outputs/apk/debug/app-debug.apk
+```
+
+---
+
+## ⬇️ Download APK
+
+> The debug APK is built and ready to sideload. It works on any Android phone running **Android 7.0 (API 24) or higher**.
+
+**APK location in this repo:**
+```
+android_app/app/build/outputs/apk/debug/app-debug.apk   (~27 MB)
+```
+
+### Install via ADB (USB)
+
+```powershell
+# 1. Enable Developer Options → USB Debugging on your phone
+# 2. Connect via USB, then:
+adb install android_app\app\build\outputs\apk\debug\app-debug.apk
+```
+
+### Sideload (Direct)
+
+1. Copy `app-debug.apk` to your phone
+2. Go to **Settings → Install Unknown Apps** → allow your file manager
+3. Tap the APK to install
+
+> ⚠️ **Note:** This is a debug build. For production, run `./gradlew assembleRelease` and sign with your keystore.
+
+---
+
 ## Project Structure
 
 ```
 ADAS/
-├── src/
-│   ├── __init__.py
-│   ├── __main__.py                # Package entry point
-│   ├── camera_module.py           # Threaded video frame capture with ring buffer
-│   ├── obd_simulator.py           # Mock CAN bus telematics generator (10 Hz)
-│   ├── active_learner.py          # YOLOv8n inference & uncertainty scoring
-│   ├── data_logger.py             # Synchronized frame + telemetry writer
-│   ├── main.py                    # EdgeDashPipeline orchestrator / entry point
-│   │
-│   │   # ── New Modules (self-contained, no existing code modified) ──
-│   ├── kalman_tracker.py          # 🆕 Multi-object Kalman tracker + trajectory analysis
-│   ├── adaptive_threshold.py      # 🆕 Environment-aware dynamic anomaly threshold
-│   ├── clip_buffer.py             # 🆕 Rolling frame buffer for temporal clip capture
-│   ├── temporal_model.py          # 🆕 ConvLSTM spatio-temporal anomaly scorer
-│   └── cloud_scorer.py            # 🆕 Cloud-side clip loader + model inference
+├── android_app/                   # 📱 Native Android ADAS App (Kotlin + Compose)
+│   ├── app/src/main/java/com/example/adas/
+│   │   ├── MainActivity.kt        # Entry point + permission gate
+│   │   ├── AdasCameraScreen.kt    # CameraX Preview + ImageAnalysis binding
+│   │   ├── FrameAnalyzer.kt       # Background frame extractor
+│   │   ├── InferenceEngine.kt     # TFLite inference engine (mock + real)
+│   │   ├── DetectionOverlay.kt    # Compose Canvas bounding box overlay
+│   │   └── Detection.kt           # Detection data class
+│   └── app/build/outputs/apk/debug/app-debug.apk  # ⬇️ Prebuilt APK
 │
-├── utils/
-│   ├── __init__.py
-│   └── config.py                  # Centralized configuration constants
-├── models/                        # YOLOv8n weights (.pt / .onnx)
-├── data/
-│   ├── frames/                    # Saved anomaly frames (.jpg)
-│   ├── telemetry/                 # Correlated JSON telemetry packets
-│   └── clips/                     # 🆕 Saved video clips (.npz) for temporal scoring
-├── tests/
-│   ├── __init__.py
-│   ├── test_kalman_tracker.py     # 🆕 30 tests — tracker, IoU, trajectory
-│   ├── test_adaptive_threshold.py # 🆕 21 tests — threshold, environment, integration
-│   └── test_temporal.py           # 🆕 27 tests — ConvLSTM, clip buffer, cloud scorer
+├── esp32_firmware/                # 🔌 ESP32-P4-EYE C++ firmware (archived)
+│   └── main/                      # FreeRTOS tasks: camera, inference, H.264, CAN
+│
+├── legacy_python_edge/            # 🐍 Original Raspberry Pi Python edge code
+│   └── src/
+│       ├── camera_module.py       # Threaded OpenCV frame capture
+│       ├── obd_simulator.py       # Mock CAN bus telematics generator
+│       ├── active_learner.py      # YOLOv8n inference & uncertainty scoring
+│       ├── kalman_tracker.py      # Multi-object Kalman tracker
+│       ├── adaptive_threshold.py  # Environment-aware dynamic threshold
+│       ├── clip_buffer.py         # Rolling frame buffer
+│       ├── temporal_model.py      # ConvLSTM spatio-temporal scorer
+│       └── main.py                # EdgeDashPipeline orchestrator
+│
+├── cloud_backend/                 # ☁️ Cloud-side scoring & ingestion
+│   └── cloud_scorer.py            # Loads .npz clips, runs ConvLSTM inference
+│
+├── tests/                         # 78 automated tests
 ├── requirements.txt               # Python dependencies
-└── README.md                      # ← You are here
+└── README.md
 ```
 
 ### Module Responsibilities
@@ -737,8 +808,23 @@ python -m pytest tests/test_temporal.py -v             # 27 tests (requires PyTo
 
 ## Tech Stack
 
+### 📱 Android App
+
 | Layer | Technology |
-|-------|-----------:|
+|-------|------------|
+| **Language** | Kotlin |
+| **UI** | Jetpack Compose |
+| **Camera** | CameraX 1.4.x (Preview + ImageAnalysis) |
+| **ML Inference** | TensorFlow Lite 2.16 |
+| **Concurrency** | Kotlin Coroutines |
+| **Permissions** | Accompanist Permissions |
+| **Min SDK** | API 24 (Android 7.0) |
+| **Target SDK** | API 36 |
+
+### 🐍 Cloud Backend / Legacy Edge
+
+| Layer | Technology |
+|-------|------------|
 | **Language** | Python 3.9+ |
 | **Computer Vision** | OpenCV (headless) |
 | **Object Detection** | Ultralytics YOLOv8 Nano |
@@ -748,7 +834,6 @@ python -m pytest tests/test_temporal.py -v             # 27 tests (requires PyTo
 | **CAN Bus** | python-can (hardware), custom simulator (MVP) |
 | **Image Processing** | Pillow, NumPy |
 | **System Monitoring** | psutil |
-| **Edge Deployment** | Raspberry Pi OS Lite (64-bit) |
 | **Testing** | pytest (78 tests) |
 
 ---
@@ -770,26 +855,35 @@ python -m pytest tests/test_temporal.py -v             # 27 tests (requires PyTo
   - [x] ConvLSTM spatio-temporal anomaly scorer (cloud-side)
   - [x] 78 automated tests with full coverage
 
-- [ ] **Phase 2 — Hardware Integration**
-  - [ ] Real OBD-II ELM327 Bluetooth integration
-  - [ ] GNSS module for geolocation tagging
-  - [ ] 4G LTE selective upload to cloud ingestion API
+- [x] **Phase 2 — Mobile ADAS App** *(Complete)*
+  - [x] Native Android app (Kotlin + Jetpack Compose)
+  - [x] Full-screen CameraX rear camera preview
+  - [x] Asynchronous background inference pipeline (Coroutines)
+  - [x] TensorFlow Lite inference engine with mock detections
+  - [x] Real-time transparent bounding box + label overlay
+  - [x] Runtime camera permission handling
+  - [x] Debug APK built and ready to sideload
+
+- [ ] **Phase 3 — Mobile + Cloud Integration**
+  - [ ] Plug in real YOLOv8n `.tflite` model
+  - [ ] OBD-II Bluetooth integration (ELM327 via BLE)
+  - [ ] GNSS geolocation tagging
+  - [ ] Wi-Fi / LTE selective upload to cloud ingestion API
   - [ ] On-device PII blurring (face + license plate)
 
-- [ ] **Phase 3 — Cloud Platform**
+- [ ] **Phase 4 — Cloud Platform**
   - [ ] Data lake ingestion pipeline (S3/GCS)
   - [ ] 3D scene graph annotation pipeline
   - [ ] VLM fine-tuning infrastructure (LoRA + Projection layers)
   - [ ] B2B SaaS dashboard for OEM customers
 
-- [ ] **Phase 4 — Consumer Features**
-  - [ ] Companion mobile app (Flutter)
+- [ ] **Phase 5 — Consumer Features**
   - [ ] DePIN tokenomics smart contracts
   - [ ] Insurtech API integration for UBI scoring
   - [ ] Driver drowsiness detection (face landmark model)
-  - [ ] Real-time forward collision warning
+  - [ ] Real-time forward collision warning audio alerts
 
-- [ ] **Phase 5 — Scale**
+- [ ] **Phase 6 — Scale**
   - [ ] Fleet management portal
   - [ ] Federated learning pipeline (privacy-preserving)
   - [ ] Multi-market expansion (Southeast Asia, Africa, LATAM)

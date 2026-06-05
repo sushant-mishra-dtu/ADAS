@@ -37,6 +37,10 @@ android {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
     }
+    // Prevent TFLite models from being compressed in the APK
+    androidResources {
+        noCompress += "tflite"
+    }
 }
 
 kotlin {
@@ -81,4 +85,19 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // CameraX
+  implementation(libs.camera.core)
+  implementation(libs.camera.camera2)
+  implementation(libs.camera.lifecycle)
+  implementation(libs.camera.view)
+
+  // TensorFlow Lite
+  implementation(libs.tflite)
+  implementation(libs.tflite.support) {
+      exclude(group = "org.tensorflow", module = "tensorflow-lite-support-api")
+  }
+
+  // Accompanist Permissions (for Compose)
+  implementation(libs.accompanist.permissions)
 }
