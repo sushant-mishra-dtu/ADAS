@@ -342,10 +342,8 @@ An intermediate hardware exploration — a FreeRTOS/C++ firmware scaffold for th
 
 > Works on any Android phone running **Android 7.0 (API 24) or higher**.
 
-**APK path in this repo:**
-```
-android_app/app/build/outputs/apk/debug/app-debug.apk   (~27 MB)
-```
+**Direct Download:**
+[⬇️ Download app-debug.apk](./app-debug.apk) (~27 MB)
 
 ### Option 1 — ADB (Recommended)
 
