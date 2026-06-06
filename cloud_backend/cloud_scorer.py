@@ -27,12 +27,20 @@ Usage:
 
 import json
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
+import torch
 
 import cv2
 import numpy as np
+
+# Ensure legacy_python_edge is in sys.path so that src imports work
+_repo_root = Path(__file__).resolve().parent.parent
+_legacy_edge = _repo_root / "legacy_python_edge"
+if _legacy_edge.exists() and str(_legacy_edge) not in sys.path:
+    sys.path.append(str(_legacy_edge))
 
 logger = logging.getLogger(__name__)
 

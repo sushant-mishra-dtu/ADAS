@@ -14,6 +14,7 @@ Tests covering:
 import sys
 import time
 from pathlib import Path
+import torch
 
 import numpy as np
 import pytest
@@ -21,6 +22,8 @@ import pytest
 # Ensure project root is on the path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+REPO_ROOT = PROJECT_ROOT.parent
+sys.path.insert(0, str(REPO_ROOT))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -337,7 +340,7 @@ class TestCloudAnomalyScorer:
 
     def test_score_clip_with_mock(self, tmp_path):
         """CloudAnomalyScorer should score a clip using mock scorer."""
-        from src.cloud_scorer import CloudAnomalyScorer
+        from cloud_backend.cloud_scorer import CloudAnomalyScorer
 
         scorer = CloudAnomalyScorer()
         scorer.load_model()
@@ -353,7 +356,7 @@ class TestCloudAnomalyScorer:
 
     def test_scoring_result_to_dict(self, tmp_path):
         """ScoringResult.to_dict() should produce a valid dict."""
-        from src.cloud_scorer import CloudAnomalyScorer
+        from cloud_backend.cloud_scorer import CloudAnomalyScorer
 
         scorer = CloudAnomalyScorer()
         scorer.load_model()
@@ -369,7 +372,7 @@ class TestCloudAnomalyScorer:
 
     def test_score_all_clips(self, tmp_path):
         """score_all_clips should process all .npz files in a directory."""
-        from src.cloud_scorer import CloudAnomalyScorer
+        from cloud_backend.cloud_scorer import CloudAnomalyScorer
 
         scorer = CloudAnomalyScorer()
         scorer.load_model()
@@ -385,7 +388,7 @@ class TestCloudAnomalyScorer:
 
     def test_score_clip_too_short(self, tmp_path):
         """Clip with < 2 frames should return None."""
-        from src.cloud_scorer import CloudAnomalyScorer
+        from cloud_backend.cloud_scorer import CloudAnomalyScorer
 
         scorer = CloudAnomalyScorer()
         scorer.load_model()
@@ -400,7 +403,7 @@ class TestCloudAnomalyScorer:
 
     def test_stats_tracking(self, tmp_path):
         """Scorer stats should track processed clips."""
-        from src.cloud_scorer import CloudAnomalyScorer
+        from cloud_backend.cloud_scorer import CloudAnomalyScorer
 
         scorer = CloudAnomalyScorer()
         scorer.load_model()
