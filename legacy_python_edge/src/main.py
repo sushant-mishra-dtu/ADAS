@@ -43,6 +43,7 @@ from utils.config import (
 from src.camera_module import CameraModule
 from src.obd_simulator import OBDSimulator
 from src.active_learner import ActiveLearner
+from src.clip_buffer import ClipBuffer
 from src.data_logger import DataLogger
 
 logger = logging.getLogger("adas")
@@ -113,6 +114,7 @@ class EdgeDashPipeline:
         self.camera = CameraModule()
         self.obd = OBDSimulator()
         self.learner = ActiveLearner()
+        self.clip_buffer = ClipBuffer()
         self.logger = DataLogger()
 
         self._running = False
@@ -194,6 +196,7 @@ class EdgeDashPipeline:
             return
 
         timestamp, frame = frame_data
+        self.clip_buffer.push(timestamp, frame)
 
         # ── 3. Get latest telemetry ──────────────────────────
         telemetry_packet = self.obd.get_latest()
@@ -210,6 +213,14 @@ class EdgeDashPipeline:
                 telemetry=telemetry_dict,
                 inference=result.to_dict(),
             )
+            clip = self.clip_buffer.capture_clip()
+            if clip is not None:
+                self.logger.save_clip(
+                    clip_frames=clip,
+                    event_timestamp=timestamp,
+                    telemetry=telemetry_dict,
+                    inference=result.to_dict(),
+                )
 
         # ── 6. Periodic housekeeping ─────────────────────────
         now = time.monotonic()

@@ -31,7 +31,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
-import torch
 
 import cv2
 import numpy as np
@@ -50,13 +49,14 @@ DEFAULT_INPUT_SIZE = 128
 DEFAULT_ANOMALY_THRESHOLD = 0.6
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_NUM_LAYERS = 1
-DEFAULT_CLIPS_DIR = "data/clips"
+DEFAULT_CLIPS_DIR = str(_legacy_edge / "data" / "clips")
 
 # Conditional PyTorch import
 try:
     import torch
     HAS_TORCH = True
 except ImportError:
+    torch = None
     HAS_TORCH = False
 
 

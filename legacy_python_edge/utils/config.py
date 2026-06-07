@@ -13,10 +13,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 FRAMES_DIR = DATA_DIR / "frames"
 TELEMETRY_DIR = DATA_DIR / "telemetry"
+CLIPS_DIR = DATA_DIR / "clips"
 MODELS_DIR = PROJECT_ROOT / "models"
 
 # Create directories on import (idempotent)
-for _dir in (FRAMES_DIR, TELEMETRY_DIR, MODELS_DIR):
+for _dir in (FRAMES_DIR, TELEMETRY_DIR, CLIPS_DIR, MODELS_DIR):
     _dir.mkdir(parents=True, exist_ok=True)
 
 # ── Camera Settings ──────────────────────────────────────────

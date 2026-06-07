@@ -63,7 +63,7 @@ class OBDSimulator:
         self._poll_interval = poll_interval
 
         # Current simulated state (smooth random walk)
-        self._rpm = float(random.randint(*OBD_RPM_RANGE[:1] * 2))
+        self._rpm = float(random.randint(*OBD_RPM_RANGE))
         self._speed = 0.0
         self._steering = 0.0
         self._brake = 0.0
