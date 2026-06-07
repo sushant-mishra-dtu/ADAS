@@ -30,6 +30,16 @@ import logging
 import math
 from typing import List, Optional, Tuple
 
+# NOTE: TYPE_CHECKING imports help static analyzers (Pylance) resolve
+# torch/nn symbols during type checking without executing heavy imports.
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Expose names to static type checkers (no runtime import).
+    import torch  # type: ignore
+    import torch.nn as nn  # type: ignore
+    import torch.nn.functional as F  # type: ignore
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -38,9 +48,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_NUM_LAYERS = 1
 DEFAULT_INPUT_SIZE = 128
-
-# ── PyTorch Import (graceful fallback) ───────────────────────
-
 try:
     import torch
     import torch.nn as nn
@@ -54,13 +61,7 @@ except ImportError:
         "Install with: pip install torch"
     )
 
-
-# ══════════════════════════════════════════════════════════════
-#  ConvLSTM Cell
-# ══════════════════════════════════════════════════════════════
-
-if HAS_TORCH:
-
+if TYPE_CHECKING or HAS_TORCH:
     class ConvLSTMCell(nn.Module):
         """
         A single Convolutional LSTM cell.
@@ -114,7 +115,8 @@ if HAS_TORCH:
         def _initialize_weights(self) -> None:
             """Xavier uniform initialization for stable training."""
             nn.init.xavier_uniform_(self.conv_gates.weight)
-            nn.init.zeros_(self.conv_gates.bias)
+            if self.conv_gates.bias is not None:
+                nn.init.zeros_(self.conv_gates.bias)
 
         def forward(
             self,
@@ -322,7 +324,7 @@ if HAS_TORCH:
 
             # ── Step 2: Process sequence through ConvLSTM ─────
             # Initialize hidden states for each layer
-            states = [None] * self.num_layers
+            states: List[Optional[Tuple["torch.Tensor", "torch.Tensor"]]] = [None] * self.num_layers
 
             for t in range(seq_len):
                 x = features[:, t]  # (B, hidden, fH, fW)
@@ -333,6 +335,7 @@ if HAS_TORCH:
                     x = h  # Output of this layer feeds into the next
 
             # Final hidden state from the last ConvLSTM layer
+            assert states[-1] is not None
             final_h = states[-1][0]  # (B, hidden_dim, fH, fW)
 
             # ── Step 3: Global Average Pooling ────────────────

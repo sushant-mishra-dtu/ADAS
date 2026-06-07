@@ -14,6 +14,7 @@ Tests covering:
 import sys
 import time
 from pathlib import Path
+import torch
 
 import numpy as np
 import pytest
@@ -243,6 +244,7 @@ class TestConvLSTMCell:
             x = torch.randn(1, 32, 8, 8)
             state = cell(x, state)
 
+        assert state is not None
         h, c = state
         assert h.shape == (1, 32, 8, 8)
         assert torch.any(h != 0)
@@ -363,6 +365,8 @@ class TestCloudAnomalyScorer:
         clip_path = self._create_mock_clip(tmp_path)
         result = scorer.score_clip(str(clip_path))
 
+        result = scorer.score_clip(str(clip_path))
+        assert result is not None
         d = result.to_dict()
         assert "temporal_score" in d
         assert "is_critical_anomaly" in d

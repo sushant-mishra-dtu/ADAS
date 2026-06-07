@@ -101,13 +101,16 @@ class TestAdaptiveThreshold:
     def test_warmup_ends(self):
         """After enough frames, warmup should end."""
         at = self._make_threshold(warmup_frames=10)
+        result = None
         for _ in range(15):
             result = at.update(max_confidence=0.50)
+        assert result is not None
         assert not result.is_warmup
 
     def test_threshold_adapts_to_high_confidence(self):
         """If recent frames are all high-confidence, threshold should rise."""
         at = self._make_threshold(warmup_frames=10, window_size=50)
+        result = None
 
         # Feed high-confidence frames
         for _ in range(60):
@@ -116,6 +119,7 @@ class TestAdaptiveThreshold:
                 frame_brightness=0.60,
                 num_detections=3,
             )
+        assert result is not None
 
         # Threshold should be above baseline 0.35
         assert result.dynamic_threshold > 0.35, (
@@ -126,6 +130,7 @@ class TestAdaptiveThreshold:
     def test_threshold_adapts_to_low_confidence(self):
         """If recent frames are all low-confidence, threshold should drop."""
         at = self._make_threshold(warmup_frames=10, window_size=50)
+        result = None
 
         # Feed low-confidence frames (model always confused)
         for _ in range(60):
@@ -134,6 +139,7 @@ class TestAdaptiveThreshold:
                 frame_brightness=0.60,
                 num_detections=2,
             )
+        assert result is not None
 
         # Threshold should drop below baseline
         assert result.dynamic_threshold < 0.35, (
@@ -182,6 +188,7 @@ class TestAdaptiveThreshold:
     def test_night_sensitivity(self):
         """Night environment should use higher k (more selective)."""
         at = self._make_threshold(warmup_frames=5)
+        result = None
 
         # Feed frames classified as night
         for _ in range(20):
@@ -190,6 +197,7 @@ class TestAdaptiveThreshold:
                 frame_brightness=0.10,  # dark → NIGHT
                 num_detections=1,
             )
+        assert result is not None
 
         # Sensitivity should be > 1.0 (night multiplier = 1.5)
         assert result.sensitivity > 1.0
@@ -197,6 +205,7 @@ class TestAdaptiveThreshold:
     def test_open_road_sensitivity(self):
         """Open road should use lower k (more sensitive to anomalies)."""
         at = self._make_threshold(warmup_frames=5)
+        result = None
 
         for _ in range(20):
             result = at.update(
@@ -204,6 +213,7 @@ class TestAdaptiveThreshold:
                 frame_brightness=0.65,
                 num_detections=0,  # empty road → OPEN_ROAD
             )
+        assert result is not None
 
         assert result.sensitivity < 1.0
 
