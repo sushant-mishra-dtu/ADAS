@@ -1,33 +1,55 @@
 package com.example.adas
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.adas.theme.ADASTheme
+import com.example.adas.theme.AdasTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
+
+enum class AdasScreen {
+    HOME,
+    CAMERA,
+    EVENT_LOG,
+    PERMISSION_REQUEST
+}
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: AdasViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Keep screen on while the ADAS system is active
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         setContent {
-            ADASTheme {
-                AdasApp()
+            val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+            ADASTheme(isDarkTheme = isDarkTheme) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(AdasTheme.colors.background)
+                ) {
+                    AdasApp(viewModel = viewModel)
+                }
             }
         }
     }
@@ -35,55 +57,68 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun AdasApp() {
+fun AdasApp(viewModel: AdasViewModel) {
+    var currentScreen by remember { mutableStateOf(AdasScreen.HOME) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
+
     val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
 
-    when {
-        cameraPermission.status.isGranted -> {
-            // Camera permission granted — show the ADAS pipeline
-            AdasCameraScreen(modifier = Modifier.fillMaxSize())
-        }
-        cameraPermission.status.shouldShowRationale -> {
-            // Show rationale and a button to request again
-            PermissionRationaleScreen(onRequest = { cameraPermission.launchPermissionRequest() })
-        }
-        else -> {
-            // First launch — request immediately
-            androidx.compose.runtime.LaunchedEffect(Unit) {
-                cameraPermission.launchPermissionRequest()
-            }
-            PermissionRationaleScreen(onRequest = { cameraPermission.launchPermissionRequest() })
+    // Automatically transition to CAMERA if permission is granted while on the PERMISSION_REQUEST screen
+    LaunchedEffect(cameraPermission.status.isGranted) {
+        if (cameraPermission.status.isGranted && currentScreen == AdasScreen.PERMISSION_REQUEST) {
+            currentScreen = AdasScreen.CAMERA
         }
     }
-}
 
-@Composable
-fun PermissionRationaleScreen(onRequest: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.foundation.layout.Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "📷 Camera Permission Required",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(12.dp))
-            Text(
-                text = "The ADAS system needs camera access to detect vehicles, pedestrians, and road hazards in real-time.",
-                fontSize = 14.sp,
-                color = Color.LightGray
-            )
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(24.dp))
-            androidx.compose.material3.Button(onClick = onRequest) {
-                Text("Grant Camera Access")
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (currentScreen) {
+            AdasScreen.HOME -> {
+                HomeScreen(
+                    onStartADAS = {
+                        if (cameraPermission.status.isGranted) {
+                            currentScreen = AdasScreen.CAMERA
+                        } else {
+                            currentScreen = AdasScreen.PERMISSION_REQUEST
+                        }
+                    },
+                    onOpenLog = {
+                        currentScreen = AdasScreen.EVENT_LOG
+                    },
+                    onOpenSettings = {
+                        showSettingsSheet = true
+                    },
+                    viewModel = viewModel
+                )
             }
+            AdasScreen.CAMERA -> {
+                AdasCameraScreen(
+                    viewModel = viewModel,
+                    onBack = {
+                        currentScreen = AdasScreen.HOME
+                    }
+                )
+            }
+            AdasScreen.EVENT_LOG -> {
+                EventLogScreen(
+                    onBack = {
+                        currentScreen = AdasScreen.HOME
+                    }
+                )
+            }
+            AdasScreen.PERMISSION_REQUEST -> {
+                PermissionScreen(
+                    onRequest = {
+                        cameraPermission.launchPermissionRequest()
+                    }
+                )
+            }
+        }
+
+        if (showSettingsSheet) {
+            SettingsSheet(
+                viewModel = viewModel,
+                onDismiss = { showSettingsSheet = false }
+            )
         }
     }
 }
