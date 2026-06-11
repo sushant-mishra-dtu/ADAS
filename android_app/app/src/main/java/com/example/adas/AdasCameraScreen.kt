@@ -1,6 +1,5 @@
 package com.example.adas
 
-import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -9,6 +8,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,8 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.util.concurrent.Executors
 
 /**
  * Full-screen camera preview with ADAS HUD layers stacked on top.
@@ -48,6 +48,14 @@ fun AdasCameraScreen(
 
     var showSettings by remember { mutableStateOf(false) }
     var showEventLog by remember { mutableStateOf(false) }
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val analyzer = remember(inferenceEngine) {
+        FrameAnalyzer(inferenceEngine) { results ->
+            viewModel.updateDetections(results)
+            viewModel.onFrameProcessed()
+        }
+    }
 
     val previewView = remember {
         PreviewView(context).apply {
@@ -55,17 +63,22 @@ fun AdasCameraScreen(
         }
     }
 
-    // Bind CameraX once per lifecycle
-    LaunchedEffect(Unit) {
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+    DisposableEffect(cameraProviderFuture, analyzer, analysisExecutor) {
+        onDispose {
+            analyzer.close()
+            analysisExecutor.shutdown()
+            if (cameraProviderFuture.isDone) {
+                cameraProviderFuture.get().unbindAll()
+            }
+        }
+    }
+
+    // Bind CameraX use-cases once
+    LaunchedEffect(cameraProviderFuture, lifecycleOwner, previewView, analyzer, analysisExecutor) {
+        val cameraProvider = cameraProviderFuture.get()
 
         val preview = Preview.Builder().build().also {
             it.surfaceProvider = previewView.surfaceProvider
-        }
-
-        val analyzer = FrameAnalyzer(inferenceEngine) { results ->
-            viewModel.updateDetections(results)
-            viewModel.onFrameProcessed()
         }
 
         val imageAnalysis = ImageAnalysis.Builder()
@@ -81,7 +94,7 @@ fun AdasCameraScreen(
             )
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
-            .also { it.setAnalyzer(ContextCompat.getMainExecutor(context), analyzer) }
+            .also { it.setAnalyzer(analysisExecutor, analyzer) }
 
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(

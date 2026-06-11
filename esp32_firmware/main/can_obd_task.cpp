@@ -24,7 +24,10 @@ esp_err_t init_can_obd() {
 }
 
 void can_obd_task(void *pvParameters) {
-    // init_can_obd();
+    if (init_can_obd() != ESP_OK) {
+        vTaskDelete(NULL);
+        return;
+    }
     ESP_LOGI(TAG, "CAN/OBD-II Task started");
     while (1) {
         // twai_message_t rx_msg;

@@ -37,7 +37,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from utils.config import FRAMES_DIR, JPEG_QUALITY, TELEMETRY_DIR
+from utils.config import CLIPS_DIR, FRAMES_DIR, JPEG_QUALITY, TELEMETRY_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -55,15 +55,18 @@ class DataLogger:
         self,
         frames_dir: Path = FRAMES_DIR,
         telemetry_dir: Path = TELEMETRY_DIR,
+        clips_dir: Path = CLIPS_DIR,
         jpeg_quality: int = JPEG_QUALITY,
     ) -> None:
         self._frames_dir = frames_dir
         self._telemetry_dir = telemetry_dir
+        self._clips_dir = clips_dir
         self._jpeg_quality = jpeg_quality
 
         # Ensure output directories exist
         self._frames_dir.mkdir(parents=True, exist_ok=True)
         self._telemetry_dir.mkdir(parents=True, exist_ok=True)
+        self._clips_dir.mkdir(parents=True, exist_ok=True)
 
         # Stats
         self._packets_saved = 0
@@ -128,6 +131,55 @@ class DataLogger:
 
         except Exception as exc:
             logger.error("Failed to save data packet: %s", exc, exc_info=True)
+            return None
+
+    def save_clip(
+        self,
+        clip_frames: list[tuple[float, np.ndarray]],
+        event_timestamp: float,
+        telemetry: Optional[dict] = None,
+        inference: Optional[dict] = None,
+    ) -> Optional[str]:
+        """
+        Save a temporal anomaly clip as an .npz file for cloud scoring.
+
+        The cloud scorer expects `frames` and `timestamps` arrays, so this
+        method is the bridge between edge capture and cloud-side ConvLSTM
+        scoring.
+        """
+        if not clip_frames:
+            return None
+
+        try:
+            base_name = self._timestamp_to_filename(event_timestamp)
+            clip_path = self._clips_dir / f"{base_name}.npz"
+
+            timestamps = np.array([ts for ts, _ in clip_frames], dtype=np.float64)
+            frames = np.stack([frame for _, frame in clip_frames], axis=0)
+            metadata = {
+                "event_timestamp": event_timestamp,
+                "telemetry": telemetry or {},
+                "inference": inference or {},
+            }
+
+            np.savez_compressed(
+                str(clip_path),
+                frames=frames,
+                timestamps=timestamps,
+                metadata=np.array(metadata, dtype=object),
+            )
+            self._total_bytes_written += os.path.getsize(clip_path)
+
+            logger.info(
+                "Clip saved: %s  (frames=%d, size=%.1f KB)",
+                clip_path.name,
+                len(clip_frames),
+                os.path.getsize(clip_path) / 1024,
+            )
+            return base_name
+
+        except Exception as exc:
+            logger.error("Failed to save clip: %s", exc, exc_info=True)
             return None
 
     @property

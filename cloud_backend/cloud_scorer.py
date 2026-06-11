@@ -27,12 +27,22 @@ Usage:
 
 import json
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import cv2
 import numpy as np
+
+if TYPE_CHECKING:
+    from legacy_python_edge.src.temporal_model import MockTemporalScorer, SpatioTemporalScorer
+
+# Ensure legacy_python_edge is in sys.path so that src imports work
+_repo_root = Path(__file__).resolve().parent.parent
+_legacy_edge = _repo_root / "legacy_python_edge"
+if _legacy_edge.exists() and str(_legacy_edge) not in sys.path:
+    sys.path.append(str(_legacy_edge))
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +52,14 @@ DEFAULT_INPUT_SIZE = 128
 DEFAULT_ANOMALY_THRESHOLD = 0.6
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_NUM_LAYERS = 1
-DEFAULT_CLIPS_DIR = "data/clips"
+DEFAULT_CLIPS_DIR = str(_legacy_edge / "data" / "clips")
 
 # Conditional PyTorch import
 try:
     import torch
     HAS_TORCH = True
 except ImportError:
+    torch = None
     HAS_TORCH = False
 
 
@@ -100,8 +111,8 @@ class CloudAnomalyScorer:
         self._model_path = model_path
         self._input_size = input_size
         self._threshold = threshold
-        self._model = None
-        self._mock_scorer = None
+        self._model: Optional["SpatioTemporalScorer"] = None
+        self._mock_scorer: Optional["MockTemporalScorer"] = None
         self._use_mock = False
 
         # Stats
@@ -112,7 +123,7 @@ class CloudAnomalyScorer:
 
     def load_model(self) -> None:
         """Load the ConvLSTM model weights, or fall back to mock scorer."""
-        if not HAS_TORCH:
+        if not HAS_TORCH or torch is None:
             logger.warning(
                 "PyTorch not available — using mock temporal scorer."
             )
@@ -120,7 +131,8 @@ class CloudAnomalyScorer:
             return
 
         try:
-            from src.temporal_model import SpatioTemporalScorer
+            assert torch is not None
+            from legacy_python_edge.src.temporal_model import SpatioTemporalScorer
 
             self._model = SpatioTemporalScorer(
                 hidden_dim=DEFAULT_HIDDEN_DIM,
@@ -153,7 +165,7 @@ class CloudAnomalyScorer:
 
     def _setup_mock(self) -> None:
         """Initialize the mock frame-differencing scorer."""
-        from src.temporal_model import MockTemporalScorer
+        from legacy_python_edge.src.temporal_model import MockTemporalScorer
         self._mock_scorer = MockTemporalScorer()
         self._use_mock = True
 
@@ -191,6 +203,7 @@ class CloudAnomalyScorer:
 
             # ── Run temporal model ───────────────────────────
             if self._use_mock or self._model is None:
+                assert self._mock_scorer is not None
                 temporal_score = self._mock_scorer.score_clip(list(frames))
             else:
                 temporal_score = self._run_model_inference(frames)
@@ -282,6 +295,9 @@ class CloudAnomalyScorer:
 
         # Stack into (1, seq_len, 3, H, W) tensor
         clip_array = np.stack(processed, axis=0)  # (T, 3, H, W)
+        assert torch is not None
+        assert self._model is not None
+
         clip_tensor = torch.from_numpy(clip_array).unsqueeze(0)  # (1, T, 3, H, W)
 
         # Inference (no gradients needed)
