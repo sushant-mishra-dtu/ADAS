@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-
 # Load the TFLite model
 interpreter = tf.lite.Interpreter(model_path="android_app/app/src/main/assets/yolov8n.tflite")
 interpreter.allocate_tensors()

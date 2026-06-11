@@ -157,12 +157,16 @@ class InferenceEngine(private val context: Context) {
             if (maxScore < CONFIDENCE_THRESHOLD) continue
 
             // Convert center-format (cx, cy, w, h) to corner-format (left, top, right, bottom)
-            // Note: Since YOLOv8 TFLite output coordinates are already normalized [0, 1],
-            // we do not scale or divide them by INPUT_SIZE.
-            val left   = cx - bw / 2f
-            val top    = cy - bh / 2f
-            val right  = cx + bw / 2f
-            val bottom = cy + bh / 2f
+            // YOLOv8 TFLite output coordinates are in pixel space relative to INPUT_SIZE.
+            // Normalize them to [0,1] before converting.
+            val cxNorm = cx / INPUT_SIZE
+            val cyNorm = cy / INPUT_SIZE
+            val bwNorm = bw / INPUT_SIZE
+            val bhNorm = bh / INPUT_SIZE
+            val left   = cxNorm - bwNorm / 2f
+            val top    = cyNorm - bhNorm / 2f
+            val right  = cxNorm + bwNorm / 2f
+            val bottom = cyNorm + bhNorm / 2f
 
             val box = RectF(
                 left.coerceIn(0f, 1f),
